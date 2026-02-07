@@ -25,14 +25,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy built application and ALL node_modules from root (pnpm hoists deps)
+# Copy built application
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/database/prisma ./prisma
 
-# Copy the generated Prisma client from packages/database where it's generated
-COPY --from=builder /app/packages/database/node_modules/.prisma ./node_modules/.prisma
+# Copy ALL node_modules including the pnpm structure with Prisma
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3001
 
