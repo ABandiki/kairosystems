@@ -18,27 +18,22 @@ RUN npx prisma generate
 WORKDIR /app/apps/api
 RUN pnpm build
 
-# Stage 2: Production deps only - use npm for flat node_modules
-FROM node:20-alpine AS prod-deps
-RUN apk add --no-cache libc6-compat openssl
+# Deploy to a standalone directory with all dependencies
 WORKDIR /app
+RUN pnpm --filter @kairo/api deploy --prod /deploy
 
-# Copy package.json and install with npm (creates flat node_modules)
-COPY apps/api/package.json ./
-RUN npm install --omit=dev
-
-# Stage 3: Runner
+# Stage 2: Runner
 FROM node:20-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy built application
-COPY --from=builder /app/apps/api/dist ./dist
+# Copy the deployed app (includes node_modules with resolved deps)
+COPY --from=builder /deploy ./
 
-# Copy production dependencies (flat structure from npm)
-COPY --from=prod-deps /app/node_modules ./node_modules
+# Copy the dist folder from the build
+COPY --from=builder /app/apps/api/dist ./dist
 
 # Copy Prisma schema and generate client
 COPY --from=builder /app/packages/database/prisma ./prisma
