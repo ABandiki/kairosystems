@@ -1,0 +1,508 @@
+// Kairo GP Practice Management System - Database Schema
+// PostgreSQL with Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  SUPER_ADMIN
+  PRACTICE_ADMIN
+  GP
+  NURSE
+  HCA
+  RECEPTIONIST
+  PRACTICE_MANAGER
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CONFIRMED
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  DNA
+  CANCELLED
+}
+
+enum AppointmentType {
+  GP_CONSULTATION
+  GP_EXTENDED
+  GP_TELEPHONE
+  GP_VIDEO
+  NURSE_APPOINTMENT
+  NURSE_CHRONIC_DISEASE
+  HCA_BLOOD_TEST
+  HCA_HEALTH_CHECK
+  VACCINATION
+  SMEAR_TEST
+  MINOR_SURGERY
+  HOME_VISIT
+}
+
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+  DECEASED
+  TRANSFERRED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum DocumentType {
+  LAB_RESULT
+  REFERRAL_LETTER
+  DISCHARGE_SUMMARY
+  SCAN_REPORT
+  ECG
+  CONSENT_FORM
+  FIT_NOTE
+  PATIENT_CORRESPONDENCE
+  OTHER
+}
+
+enum PrescriptionType {
+  ACUTE
+  REPEAT
+}
+
+enum PrescriptionStatus {
+  PENDING
+  ISSUED
+  DISPENSED
+  CANCELLED
+}
+
+enum AlertType {
+  ALLERGY
+  SAFEGUARDING
+  MEDICAL
+  COMMUNICATION
+  OTHER
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PharmacyType {
+  COMMUNITY
+  HOSPITAL
+  ONLINE
+}
+
+// ==================== MODELS ====================
+
+// Practice - supports multi-tenancy
+model Practice {
+  id            String   @id @default(cuid())
+  name          String
+  odsCode       String   @unique // NHS ODS Code
+  email         String
+  phone         String
+  logo          String?
+
+  // Address
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  county        String?
+  postcode      String
+  country       String   @default("United Kingdom")
+
+  // Settings
+  isActive      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  users         User[]
+  patients      Patient[]
+  appointments  Appointment[]
+  consultations Consultation[]
+  prescriptions Prescription[]
+  documents     Document[]
+  pharmacies    Pharmacy[]
+  openingHours  OpeningHours[]
+  rooms         Room[]
+  appointmentTypeSettings AppointmentTypeSetting[]
+
+  @@map("practices")
+}
+
+model OpeningHours {
+  id          String   @id @default(cuid())
+  practiceId  String
+  dayOfWeek   Int      // 0-6 (Sunday-Saturday)
+  openTime    String   // HH:mm
+  closeTime   String   // HH:mm
+  isClosed    Boolean  @default(false)
+
+  practice    Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+
+  @@unique([practiceId, dayOfWeek])
+  @@map("opening_hours")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  practiceId  String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+
+  practice    Practice @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  workingHours WorkingHours[]
+
+  @@map("rooms")
+}
+
+model AppointmentTypeSetting {
+  id              String          @id @default(cuid())
+  practiceId      String
+  type            AppointmentType
+  label           String
+  code            String
+  defaultDuration Int             // minutes
+  color           String
+  isActive        Boolean         @default(true)
+  allowedRoles    UserRole[]
+
+  practice        Practice        @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+
+  @@unique([practiceId, type])
+  @@map("appointment_type_settings")
+}
+
+// User / Staff member
+model User {
+  id          String    @id @default(cuid())
+  practiceId  String
+  email       String    @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        UserRole
+  phone       String?
+  avatar      String?
+  signature   String?
+  gmcNumber   String?   // For doctors
+  nmcNumber   String?   // For nurses
+  isActive    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Relations
+  practice          Practice        @relation(fields: [practiceId], references: [id])
+  workingHours      WorkingHours[]
+  appointments      Appointment[]   @relation("ClinicianAppointments")
+  consultations     Consultation[]  @relation("ClinicianConsultations")
+  prescriptions     Prescription[]  @relation("PrescriberPrescriptions")
+  uploadedDocuments Document[]      @relation("UploaderDocuments")
+  reviewedDocuments Document[]      @relation("ReviewerDocuments")
+  registeredPatients Patient[]      @relation("RegisteredGP")
+
+  @@map("users")
+}
+
+model WorkingHours {
+  id         String   @id @default(cuid())
+  userId     String
+  dayOfWeek  Int      // 0-6
+  startTime  String   // HH:mm
+  endTime    String   // HH:mm
+  roomId     String?
+  isActive   Boolean  @default(true)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room       Room?    @relation(fields: [roomId], references: [id])
+
+  @@map("working_hours")
+}
+
+// Patient
+model Patient {
+  id                  String        @id @default(cuid())
+  practiceId          String
+  nhsNumber           String?       @unique
+  title               String?
+  firstName           String
+  lastName            String
+  dateOfBirth         DateTime
+  gender              Gender
+  email               String?
+  phone               String?
+  mobilePhone         String?
+  preferredLanguage   String        @default("English")
+  interpreterRequired Boolean       @default(false)
+
+  // Address
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  county              String?
+  postcode            String?
+  country             String        @default("United Kingdom")
+
+  // Emergency contact
+  emergencyContactName     String?
+  emergencyContactPhone    String?
+  emergencyContactRelation String?
+
+  // GP assignment
+  registeredGpId      String?
+  nominatedPharmacyId String?
+
+  status              PatientStatus @default(ACTIVE)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Relations
+  practice            Practice      @relation(fields: [practiceId], references: [id])
+  registeredGp        User?         @relation("RegisteredGP", fields: [registeredGpId], references: [id])
+  nominatedPharmacy   Pharmacy?     @relation(fields: [nominatedPharmacyId], references: [id])
+  alerts              PatientAlert[]
+  appointments        Appointment[]
+  consultations       Consultation[]
+  prescriptions       Prescription[]
+  documents           Document[]
+  medicalHistory      MedicalHistory[]
+
+  @@index([practiceId, lastName, firstName])
+  @@index([nhsNumber])
+  @@map("patients")
+}
+
+model PatientAlert {
+  id          String        @id @default(cuid())
+  patientId   String
+  type        AlertType
+  severity    AlertSeverity
+  description String
+  isActive    Boolean       @default(true)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  patient     Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_alerts")
+}
+
+model MedicalHistory {
+  id          String   @id @default(cuid())
+  patientId   String
+  type        String   // allergy, condition, surgery, etc.
+  description String
+  date        DateTime?
+  notes       String?
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("medical_history")
+}
+
+// Appointment
+model Appointment {
+  id              String            @id @default(cuid())
+  practiceId      String
+  patientId       String
+  clinicianId     String
+  roomId          String?
+
+  appointmentType AppointmentType
+  status          AppointmentStatus @default(BOOKED)
+
+  scheduledStart  DateTime
+  scheduledEnd    DateTime
+  duration        Int               // minutes
+
+  reason          String?
+  notes           String?
+  isUrgent        Boolean           @default(false)
+  reminderSent    Boolean           @default(false)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  practice        Practice          @relation(fields: [practiceId], references: [id])
+  patient         Patient           @relation(fields: [patientId], references: [id])
+  clinician       User              @relation("ClinicianAppointments", fields: [clinicianId], references: [id])
+  room            Room?             @relation(fields: [roomId], references: [id])
+  consultation    Consultation?
+
+  @@index([practiceId, scheduledStart])
+  @@index([clinicianId, scheduledStart])
+  @@index([patientId])
+  @@map("appointments")
+}
+
+// Consultation / Clinical notes
+model Consultation {
+  id                  String          @id @default(cuid())
+  practiceId          String
+  appointmentId       String          @unique
+  patientId           String
+  clinicianId         String
+
+  consultationType    AppointmentType
+
+  presentingComplaint String?
+  history             String?
+  examination         String?
+  diagnosis           String?
+  plan                String?
+  notes               String?
+
+  isSigned            Boolean         @default(false)
+  signedAt            DateTime?
+
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // Relations
+  practice            Practice        @relation(fields: [practiceId], references: [id])
+  appointment         Appointment     @relation(fields: [appointmentId], references: [id])
+  patient             Patient         @relation(fields: [patientId], references: [id])
+  clinician           User            @relation("ClinicianConsultations", fields: [clinicianId], references: [id])
+  prescriptions       Prescription[]
+  documents           Document[]
+
+  @@index([patientId, createdAt])
+  @@map("consultations")
+}
+
+// Prescription
+model Prescription {
+  id              String             @id @default(cuid())
+  practiceId      String
+  patientId       String
+  prescriberId    String
+  consultationId  String?
+  pharmacyId      String?
+
+  type            PrescriptionType
+  status          PrescriptionStatus @default(PENDING)
+
+  issuedAt        DateTime?
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  // Relations
+  practice        Practice           @relation(fields: [practiceId], references: [id])
+  patient         Patient            @relation(fields: [patientId], references: [id])
+  prescriber      User               @relation("PrescriberPrescriptions", fields: [prescriberId], references: [id])
+  consultation    Consultation?      @relation(fields: [consultationId], references: [id])
+  pharmacy        Pharmacy?          @relation(fields: [pharmacyId], references: [id])
+  items           PrescriptionItem[]
+
+  @@index([patientId, createdAt])
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id              String       @id @default(cuid())
+  prescriptionId  String
+
+  medicationName  String
+  dose            String
+  frequency       String
+  duration        String
+  quantity        Int
+  instructions    String?
+
+  prescription    Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@map("prescription_items")
+}
+
+// Document / File
+model Document {
+  id               String       @id @default(cuid())
+  practiceId       String
+  patientId        String
+  uploadedById     String
+  reviewedById     String?
+  consultationId   String?
+
+  type             DocumentType
+  name             String
+  description      String?
+  filePath         String
+  fileSize         Int
+  mimeType         String
+
+  reviewedAt       DateTime?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  practice         Practice     @relation(fields: [practiceId], references: [id])
+  patient          Patient      @relation(fields: [patientId], references: [id])
+  uploadedBy       User         @relation("UploaderDocuments", fields: [uploadedById], references: [id])
+  reviewedBy       User?        @relation("ReviewerDocuments", fields: [reviewedById], references: [id])
+  consultation     Consultation? @relation(fields: [consultationId], references: [id])
+
+  @@index([patientId, createdAt])
+  @@map("documents")
+}
+
+// Pharmacy
+model Pharmacy {
+  id          String       @id @default(cuid())
+  practiceId  String
+  name        String
+  odsCode     String?
+
+  // Address
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  county       String?
+  postcode     String
+  country      String       @default("United Kingdom")
+
+  phone       String
+  email       String?
+  fax         String?
+
+  type        PharmacyType @default(COMMUNITY)
+  epsEnabled  Boolean      @default(true)
+  isActive    Boolean      @default(true)
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  practice    Practice     @relation(fields: [practiceId], references: [id])
+  patients    Patient[]
+  prescriptions Prescription[]
+
+  @@map("pharmacies")
+}

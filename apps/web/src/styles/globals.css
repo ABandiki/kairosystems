@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    /* Primary: #03989E (teal) */
+    --primary: 182 97% 32%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary: #4CBD90 (green) */
+    --secondary: 153 48% 52%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 160 20% 96%;
+    --muted-foreground: 182 10% 40%;
+    /* Accent uses lighter teal */
+    --accent: 160 30% 94%;
+    --accent-foreground: 182 97% 25%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 180 15% 88%;
+    --input: 180 15% 88%;
+    --ring: 182 97% 32%;
+    --radius: 0.5rem;
+
+    /* Company colors for direct use */
+    --company-teal: #03989E;
+    --company-green: #4CBD90;
+    --company-teal-light: #E6F7F7;
+    --company-green-light: #E8F8F2;
+  }
+
+  .dark {
+    --background: 182 30% 5%;
+    --foreground: 160 20% 98%;
+    --card: 182 30% 8%;
+    --card-foreground: 160 20% 98%;
+    --popover: 182 30% 8%;
+    --popover-foreground: 160 20% 98%;
+    --primary: 182 80% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 153 40% 40%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 182 20% 15%;
+    --muted-foreground: 160 15% 65%;
+    --accent: 182 25% 18%;
+    --accent-foreground: 160 20% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 182 20% 18%;
+    --input: 182 20% 18%;
+    --ring: 182 80% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* Calendar styles */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+}
+
+.calendar-time-slot {
+  min-height: 48px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Appointment colors - using company teal/green theme */
+.appointment-gp {
+  @apply bg-teal-100 border-l-4 border-teal-600 text-teal-800;
+}
+
+.appointment-nurse {
+  @apply bg-emerald-100 border-l-4 border-emerald-500 text-emerald-800;
+}
+
+.appointment-hca {
+  @apply bg-cyan-100 border-l-4 border-cyan-500 text-cyan-800;
+}
+
+/* Status badges - using company color scheme */
+.status-booked {
+  @apply bg-teal-100 text-teal-800;
+}
+
+.status-confirmed {
+  @apply bg-emerald-100 text-emerald-800;
+}
+
+.status-arrived {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.status-in-progress {
+  @apply bg-cyan-100 text-cyan-800;
+}
+
+.status-completed {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-dna {
+  @apply bg-red-100 text-red-800;
+}
+
+.status-cancelled {
+  @apply bg-gray-100 text-gray-800;
+}
