@@ -22,10 +22,6 @@ RUN pnpm build
 WORKDIR /app
 RUN pnpm --filter @kairo/api deploy --prod /deploy
 
-# Copy Prisma client to the deploy directory
-RUN cp -r /app/node_modules/.pnpm/@prisma+client*/node_modules/.prisma /deploy/node_modules/.prisma || true
-RUN cp -r /app/node_modules/.pnpm/@prisma+client*/node_modules/@prisma/client /deploy/node_modules/@prisma/client || true
-
 # Stage 2: Runner
 FROM node:20-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl
@@ -33,15 +29,24 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy the deployed app with Prisma client
+# Copy the deployed app (includes node_modules with resolved deps)
 COPY --from=builder /deploy ./
 
 # Copy the dist folder from the build
 COPY --from=builder /app/apps/api/dist ./dist
 
-# Copy Prisma schema (for runtime migrations if needed)
+# Copy Prisma schema for generation
 COPY --from=builder /app/packages/database/prisma ./prisma
+
+# Install prisma CLI for runtime generation
+RUN npm install -g prisma@5.22.0
+
+# Create startup script that generates Prisma client then runs the app
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'prisma generate --schema=/app/prisma/schema.prisma' >> /app/start.sh && \
+    echo 'exec node dist/main.js' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 EXPOSE 3001
 
-CMD ["node", "dist/main.js"]
+CMD ["/app/start.sh"]
