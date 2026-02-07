@@ -316,12 +316,12 @@ export function NewAppointmentDialog({
           {/* Room */}
           <div className="space-y-2">
             <Label htmlFor="room">Room</Label>
-            <Select value={roomId} onValueChange={setRoomId}>
+            <Select value={roomId} onValueChange={(v) => setRoomId(v === 'none' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select room (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No room assigned</SelectItem>
+                <SelectItem value="none">No room assigned</SelectItem>
                 {rooms?.map((room) => (
                   <SelectItem key={room.id} value={room.id}>
                     {room.name}
