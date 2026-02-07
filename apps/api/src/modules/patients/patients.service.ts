@@ -117,10 +117,20 @@ export class PatientsService {
     practiceId: string,
     data: Prisma.PatientCreateInput & { practiceId?: string },
   ) {
-    const { practiceId: _, ...patientData } = data;
+    const { practiceId: _, dateOfBirth, ...patientData } = data as any;
+
+    // Convert dateOfBirth to ISO DateTime if it's a date-only string
+    let parsedDateOfBirth = dateOfBirth;
+    if (typeof dateOfBirth === 'string' && !dateOfBirth.includes('T')) {
+      parsedDateOfBirth = new Date(dateOfBirth + 'T00:00:00.000Z');
+    } else if (typeof dateOfBirth === 'string') {
+      parsedDateOfBirth = new Date(dateOfBirth);
+    }
+
     return this.prisma.patient.create({
       data: {
         ...patientData,
+        dateOfBirth: parsedDateOfBirth,
         practice: { connect: { id: practiceId } },
       },
     });
