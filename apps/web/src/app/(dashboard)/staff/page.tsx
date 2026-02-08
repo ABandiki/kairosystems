@@ -105,6 +105,21 @@ export default function StaffPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Selected staff for view/edit/schedule dialogs
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [editStaff, setEditStaff] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: '',
+    phone: '',
+    gmcNumber: '',
+    nmcNumber: '',
+  });
+
   const { data: staffData, isLoading, error, refetch } = useStaff(
     roleFilter !== 'all' ? roleFilter : undefined,
     !!user
@@ -171,6 +186,56 @@ export default function StaffPage() {
       refetch();
     } catch (err) {
       console.error('Failed to create staff member:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleViewProfile = (member: Staff) => {
+    setSelectedStaff(member);
+    setShowViewDialog(true);
+  };
+
+  const handleEditDetails = (member: Staff) => {
+    setSelectedStaff(member);
+    setEditStaff({
+      email: member.email,
+      firstName: member.firstName,
+      lastName: member.lastName,
+      role: member.role,
+      phone: member.phone || '',
+      gmcNumber: member.gmcNumber || '',
+      nmcNumber: member.nmcNumber || '',
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleManageSchedule = (member: Staff) => {
+    setSelectedStaff(member);
+    setShowScheduleDialog(true);
+  };
+
+  const handleDeactivate = async (member: Staff) => {
+    if (confirm(`Are you sure you want to deactivate ${member.firstName} ${member.lastName}?`)) {
+      try {
+        await staffApi.update(member.id, { isActive: false });
+        refetch();
+      } catch (err) {
+        console.error('Failed to deactivate staff member:', err);
+      }
+    }
+  };
+
+  const handleUpdateStaff = async () => {
+    if (!selectedStaff) return;
+    setIsSubmitting(true);
+    try {
+      await staffApi.update(selectedStaff.id, editStaff);
+      setShowEditDialog(false);
+      setSelectedStaff(null);
+      refetch();
+    } catch (err) {
+      console.error('Failed to update staff member:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -280,10 +345,10 @@ export default function StaffPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View Profile</DropdownMenuItem>
-                      <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                      <DropdownMenuItem>Manage Schedule</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem onClick={() => handleViewProfile(member)}>View Profile</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditDetails(member)}>Edit Details</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleManageSchedule(member)}>Manage Schedule</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600" onClick={() => handleDeactivate(member)}>
                         Deactivate
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -432,6 +497,223 @@ export default function StaffPage() {
               disabled={isSubmitting || !newStaff.firstName || !newStaff.lastName || !newStaff.email}
             >
               {isSubmitting ? 'Adding...' : 'Add Staff Member'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Profile Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Staff Profile</DialogTitle>
+            <DialogDescription>
+              View staff member details
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStaff && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={selectedStaff.avatar} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {selectedStaff.firstName[0]}{selectedStaff.lastName[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {selectedStaff.role.includes('GP') ? 'Dr. ' : ''}{selectedStaff.firstName} {selectedStaff.lastName}
+                  </h3>
+                  <Badge className={roleColors[selectedStaff.role] || 'bg-gray-100 text-gray-800'} variant="secondary">
+                    {roleLabels[selectedStaff.role] || selectedStaff.role.replace(/_/g, ' ')}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid gap-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                  <span>{selectedStaff.email}</span>
+                </div>
+                {selectedStaff.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                    <span>{selectedStaff.phone}</span>
+                  </div>
+                )}
+                {selectedStaff.gmcNumber && (
+                  <p className="text-sm"><span className="text-gray-500">GMC:</span> {selectedStaff.gmcNumber}</p>
+                )}
+                {selectedStaff.nmcNumber && (
+                  <p className="text-sm"><span className="text-gray-500">NMC:</span> {selectedStaff.nmcNumber}</p>
+                )}
+                <div className="pt-2 border-t">
+                  <p className="text-sm text-gray-500 mb-2">Working Days</p>
+                  <div className="flex gap-1">
+                    {getDayAbbreviations(selectedStaff.workingHours).map(({ day, isWorking }, index) => (
+                      <span
+                        key={index}
+                        className={`w-8 h-8 rounded-full text-sm flex items-center justify-center ${
+                          isWorking ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
+                        }`}
+                      >
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowViewDialog(false)}>
+              Close
+            </Button>
+            <Button onClick={() => { setShowViewDialog(false); if(selectedStaff) handleEditDetails(selectedStaff); }}>
+              Edit Details
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Staff Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogDescription>
+              Update staff member details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="editFirstName">First Name *</Label>
+                <Input
+                  id="editFirstName"
+                  value={editStaff.firstName}
+                  onChange={(e) => setEditStaff({ ...editStaff, firstName: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editLastName">Last Name *</Label>
+                <Input
+                  id="editLastName"
+                  value={editStaff.lastName}
+                  onChange={(e) => setEditStaff({ ...editStaff, lastName: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmail">Email *</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editStaff.email}
+                onChange={(e) => setEditStaff({ ...editStaff, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editRole">Role *</Label>
+              <Select
+                value={editStaff.role}
+                onValueChange={(v) => setEditStaff({ ...editStaff, role: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="GP_PARTNER">GP Partner</SelectItem>
+                  <SelectItem value="GP_SALARIED">Salaried GP</SelectItem>
+                  <SelectItem value="GP_REGISTRAR">GP Registrar</SelectItem>
+                  <SelectItem value="PRACTICE_NURSE">Practice Nurse</SelectItem>
+                  <SelectItem value="HEALTHCARE_ASSISTANT">Healthcare Assistant</SelectItem>
+                  <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
+                  <SelectItem value="PRACTICE_MANAGER">Practice Manager</SelectItem>
+                  <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editPhone">Phone</Label>
+              <Input
+                id="editPhone"
+                value={editStaff.phone}
+                onChange={(e) => setEditStaff({ ...editStaff, phone: e.target.value })}
+              />
+            </div>
+            {(editStaff.role.includes('GP') || editStaff.role === 'PHARMACIST') && (
+              <div className="space-y-2">
+                <Label htmlFor="editGmcNumber">GMC Number</Label>
+                <Input
+                  id="editGmcNumber"
+                  value={editStaff.gmcNumber}
+                  onChange={(e) => setEditStaff({ ...editStaff, gmcNumber: e.target.value })}
+                />
+              </div>
+            )}
+            {editStaff.role === 'PRACTICE_NURSE' && (
+              <div className="space-y-2">
+                <Label htmlFor="editNmcNumber">NMC Number</Label>
+                <Input
+                  id="editNmcNumber"
+                  value={editStaff.nmcNumber}
+                  onChange={(e) => setEditStaff({ ...editStaff, nmcNumber: e.target.value })}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateStaff}
+              disabled={isSubmitting || !editStaff.firstName || !editStaff.lastName || !editStaff.email}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Schedule Dialog */}
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Schedule</DialogTitle>
+            <DialogDescription>
+              {selectedStaff && `Configure working hours for ${selectedStaff.firstName} ${selectedStaff.lastName}`}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedStaff && (
+            <div className="py-4">
+              <p className="text-sm text-gray-600 mb-4">Current working days:</p>
+              <div className="space-y-2">
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, index) => {
+                  const workingHour = selectedStaff.workingHours?.find(wh => wh.dayOfWeek === index);
+                  return (
+                    <div key={day} className="flex items-center justify-between py-2 border-b">
+                      <span className="font-medium">{day}</span>
+                      {workingHour?.isActive ? (
+                        <span className="text-sm text-green-600">
+                          {workingHour.startTime} - {workingHour.endTime}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-400">Not working</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-gray-500 mt-4">
+                To modify working hours, please contact the practice administrator.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
