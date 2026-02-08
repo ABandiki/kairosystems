@@ -41,27 +41,23 @@ import { useStaff } from '@/hooks/use-api';
 import { staffApi, Staff } from '@/lib/api';
 
 const roleColors: Record<string, string> = {
-  GP_PARTNER: 'bg-teal-100 text-teal-800',
-  GP_SALARIED: 'bg-teal-100 text-teal-800',
-  GP_REGISTRAR: 'bg-teal-100 text-teal-800',
-  PRACTICE_NURSE: 'bg-emerald-100 text-emerald-800',
-  HEALTHCARE_ASSISTANT: 'bg-amber-100 text-amber-800',
+  SUPER_ADMIN: 'bg-purple-100 text-purple-800',
+  PRACTICE_ADMIN: 'bg-indigo-100 text-indigo-800',
+  GP: 'bg-teal-100 text-teal-800',
+  NURSE: 'bg-emerald-100 text-emerald-800',
+  HCA: 'bg-amber-100 text-amber-800',
   RECEPTIONIST: 'bg-cyan-100 text-cyan-800',
   PRACTICE_MANAGER: 'bg-gray-100 text-gray-800',
-  ADMIN: 'bg-gray-100 text-gray-800',
-  PHARMACIST: 'bg-green-100 text-green-800',
 };
 
 const roleLabels: Record<string, string> = {
-  GP_PARTNER: 'GP Partner',
-  GP_SALARIED: 'Salaried GP',
-  GP_REGISTRAR: 'GP Registrar',
-  PRACTICE_NURSE: 'Practice Nurse',
-  HEALTHCARE_ASSISTANT: 'Healthcare Assistant',
+  SUPER_ADMIN: 'Super Admin',
+  PRACTICE_ADMIN: 'Practice Admin',
+  GP: 'GP',
+  NURSE: 'Nurse',
+  HCA: 'Healthcare Assistant',
   RECEPTIONIST: 'Receptionist',
   PRACTICE_MANAGER: 'Practice Manager',
-  ADMIN: 'Admin',
-  PHARMACIST: 'Pharmacist',
 };
 
 function StaffCardSkeleton() {
@@ -273,14 +269,12 @@ export default function StaffPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="GP_PARTNER">GP Partner</SelectItem>
-              <SelectItem value="GP_SALARIED">Salaried GP</SelectItem>
-              <SelectItem value="GP_REGISTRAR">GP Registrar</SelectItem>
-              <SelectItem value="PRACTICE_NURSE">Practice Nurse</SelectItem>
-              <SelectItem value="HEALTHCARE_ASSISTANT">Healthcare Assistant</SelectItem>
+              <SelectItem value="GP">GP</SelectItem>
+              <SelectItem value="NURSE">Nurse</SelectItem>
+              <SelectItem value="HCA">Healthcare Assistant</SelectItem>
               <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
               <SelectItem value="PRACTICE_MANAGER">Practice Manager</SelectItem>
-              <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
+              <SelectItem value="PRACTICE_ADMIN">Practice Admin</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -331,7 +325,7 @@ export default function StaffPage() {
                     </Avatar>
                     <div>
                       <CardTitle className="text-base">
-                        {member.role.includes('GP') ? 'Dr. ' : ''}{member.firstName} {member.lastName}
+                        {member.role === 'GP' ? 'Dr. ' : ''}{member.firstName} {member.lastName}
                       </CardTitle>
                       <Badge className={roleColors[member.role] || 'bg-gray-100 text-gray-800'} variant="secondary">
                         {roleLabels[member.role] || member.role.replace(/_/g, ' ')}
@@ -447,15 +441,12 @@ export default function StaffPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="GP_PARTNER">GP Partner</SelectItem>
-                  <SelectItem value="GP_SALARIED">Salaried GP</SelectItem>
-                  <SelectItem value="GP_REGISTRAR">GP Registrar</SelectItem>
-                  <SelectItem value="PRACTICE_NURSE">Practice Nurse</SelectItem>
-                  <SelectItem value="HEALTHCARE_ASSISTANT">Healthcare Assistant</SelectItem>
+                  <SelectItem value="GP">GP</SelectItem>
+                  <SelectItem value="NURSE">Nurse</SelectItem>
+                  <SelectItem value="HCA">Healthcare Assistant</SelectItem>
                   <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
                   <SelectItem value="PRACTICE_MANAGER">Practice Manager</SelectItem>
-                  <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="PRACTICE_ADMIN">Practice Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -467,7 +458,7 @@ export default function StaffPage() {
                 onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
               />
             </div>
-            {(newStaff.role.includes('GP') || newStaff.role === 'PHARMACIST') && (
+            {newStaff.role === 'GP' && (
               <div className="space-y-2">
                 <Label htmlFor="gmcNumber">GMC Number</Label>
                 <Input
@@ -477,7 +468,7 @@ export default function StaffPage() {
                 />
               </div>
             )}
-            {newStaff.role === 'PRACTICE_NURSE' && (
+            {newStaff.role === 'NURSE' && (
               <div className="space-y-2">
                 <Label htmlFor="nmcNumber">NMC Number</Label>
                 <Input
@@ -522,7 +513,7 @@ export default function StaffPage() {
                 </Avatar>
                 <div>
                   <h3 className="text-lg font-semibold">
-                    {selectedStaff.role.includes('GP') ? 'Dr. ' : ''}{selectedStaff.firstName} {selectedStaff.lastName}
+                    {selectedStaff.role === 'GP' ? 'Dr. ' : ''}{selectedStaff.firstName} {selectedStaff.lastName}
                   </h3>
                   <Badge className={roleColors[selectedStaff.role] || 'bg-gray-100 text-gray-800'} variant="secondary">
                     {roleLabels[selectedStaff.role] || selectedStaff.role.replace(/_/g, ' ')}
@@ -622,15 +613,12 @@ export default function StaffPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="GP_PARTNER">GP Partner</SelectItem>
-                  <SelectItem value="GP_SALARIED">Salaried GP</SelectItem>
-                  <SelectItem value="GP_REGISTRAR">GP Registrar</SelectItem>
-                  <SelectItem value="PRACTICE_NURSE">Practice Nurse</SelectItem>
-                  <SelectItem value="HEALTHCARE_ASSISTANT">Healthcare Assistant</SelectItem>
+                  <SelectItem value="GP">GP</SelectItem>
+                  <SelectItem value="NURSE">Nurse</SelectItem>
+                  <SelectItem value="HCA">Healthcare Assistant</SelectItem>
                   <SelectItem value="RECEPTIONIST">Receptionist</SelectItem>
                   <SelectItem value="PRACTICE_MANAGER">Practice Manager</SelectItem>
-                  <SelectItem value="PHARMACIST">Pharmacist</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="PRACTICE_ADMIN">Practice Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -642,7 +630,7 @@ export default function StaffPage() {
                 onChange={(e) => setEditStaff({ ...editStaff, phone: e.target.value })}
               />
             </div>
-            {(editStaff.role.includes('GP') || editStaff.role === 'PHARMACIST') && (
+            {editStaff.role === 'GP' && (
               <div className="space-y-2">
                 <Label htmlFor="editGmcNumber">GMC Number</Label>
                 <Input
@@ -652,7 +640,7 @@ export default function StaffPage() {
                 />
               </div>
             )}
-            {editStaff.role === 'PRACTICE_NURSE' && (
+            {editStaff.role === 'NURSE' && (
               <div className="space-y-2">
                 <Label htmlFor="editNmcNumber">NMC Number</Label>
                 <Input

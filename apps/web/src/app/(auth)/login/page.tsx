@@ -111,16 +111,24 @@ export default function LoginPage() {
               </p>
               <div className="space-y-2 text-xs text-gray-600">
                 <div className="flex justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium">GP:</span>
-                  <span>dr.chikwanha@avondale-medical.co.zw</span>
-                </div>
-                <div className="flex justify-between p-2 bg-gray-50 rounded">
                   <span className="font-medium">Admin:</span>
-                  <span>admin@avondale-medical.co.zw</span>
+                  <span className="text-right">admin@avondale-medical.co.zw</span>
                 </div>
                 <div className="flex justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium">Password:</span>
-                  <span>Password123!</span>
+                  <span className="font-medium">GP:</span>
+                  <span className="text-right">dr.chikwanha@avondale-medical.co.zw</span>
+                </div>
+                <div className="flex justify-between p-2 bg-gray-50 rounded">
+                  <span className="font-medium">Nurse:</span>
+                  <span className="text-right">nurse.mutasa@avondale-medical.co.zw</span>
+                </div>
+                <div className="flex justify-between p-2 bg-gray-50 rounded">
+                  <span className="font-medium">Reception:</span>
+                  <span className="text-right">reception@avondale-medical.co.zw</span>
+                </div>
+                <div className="flex justify-between p-2 bg-teal-50 rounded border border-teal-200">
+                  <span className="font-medium text-teal-700">Password (all):</span>
+                  <span className="font-mono text-teal-800">Password123!</span>
                 </div>
               </div>
             </div>

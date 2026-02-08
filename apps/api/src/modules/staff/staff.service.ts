@@ -110,6 +110,8 @@ export class StaffService {
     data: {
       firstName?: string;
       lastName?: string;
+      email?: string;
+      role?: UserRole;
       phone?: string;
       gmcNumber?: string;
       nmcNumber?: string;
