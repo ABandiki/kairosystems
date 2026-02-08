@@ -141,6 +141,7 @@ model Practice {
   openingHours  OpeningHours[]
   rooms         Room[]
   appointmentTypeSettings AppointmentTypeSetting[]
+  notes         Note[]
 
   @@map("practices")
 }
@@ -219,6 +220,7 @@ model User {
   uploadedDocuments Document[]      @relation("UploaderDocuments")
   reviewedDocuments Document[]      @relation("ReviewerDocuments")
   registeredPatients Patient[]      @relation("RegisteredGP")
+  createdNotes      Note[]          @relation("CreatedNotes")
 
   @@map("users")
 }
@@ -286,6 +288,7 @@ model Patient {
   prescriptions       Prescription[]
   documents           Document[]
   medicalHistory      MedicalHistory[]
+  notes               Note[]
 
   @@index([practiceId, lastName, firstName])
   @@index([nhsNumber])
@@ -354,6 +357,7 @@ model Appointment {
   clinician       User              @relation("ClinicianAppointments", fields: [clinicianId], references: [id])
   room            Room?             @relation(fields: [roomId], references: [id])
   consultation    Consultation?
+  clinicalNotes   Note[]
 
   @@index([practiceId, scheduledStart])
   @@index([clinicianId, scheduledStart])
@@ -505,4 +509,46 @@ model Pharmacy {
   prescriptions Prescription[]
 
   @@map("pharmacies")
+}
+
+// Clinical Notes - standalone notes not tied to appointments
+enum NoteType {
+  CONSULTATION
+  FOLLOW_UP
+  LAB_REVIEW
+  REFERRAL
+  PHONE_CALL
+  PRESCRIPTION
+  DISCHARGE
+  OTHER
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  practiceId  String
+  patientId   String
+  createdById String
+
+  title       String
+  content     String
+  noteType    NoteType
+  colorCode   String?   @default("#FFFFFF")
+
+  headerImage String?
+  footerImage String?
+
+  appointmentId String?  // Optional link to appointment
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  practice    Practice  @relation(fields: [practiceId], references: [id])
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  createdBy   User      @relation("CreatedNotes", fields: [createdById], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([practiceId, createdAt])
+  @@index([patientId])
+  @@map("notes")
 }

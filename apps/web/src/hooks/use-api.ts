@@ -6,6 +6,7 @@ import {
   appointmentsApi,
   staffApi,
   practiceApi,
+  notesApi,
   Patient,
   Appointment,
   Staff,
@@ -15,6 +16,7 @@ import {
   AppointmentTypeSetting,
   DashboardStats,
   PatientStats,
+  Note,
   PaginatedResponse,
   getAccessToken,
   ApiError,
@@ -204,4 +206,23 @@ export function useTodayAppointments(enabled: boolean = true) {
     startDate: today.toISOString(),
     endDate: tomorrow.toISOString(),
   }, enabled);
+}
+
+// Notes hooks
+export function useNotes(params?: {
+  search?: string;
+  noteType?: string;
+  patientId?: string;
+  page?: number;
+  pageSize?: number;
+}, enabled: boolean = true) {
+  return useApiQuery<PaginatedResponse<Note>>(
+    () => notesApi.getAll(params),
+    [params?.search, params?.noteType, params?.patientId, params?.page, params?.pageSize],
+    enabled
+  );
+}
+
+export function useNote(id: string, enabled: boolean = true) {
+  return useApiQuery<Note>(() => notesApi.getById(id), [id], enabled && !!id);
 }

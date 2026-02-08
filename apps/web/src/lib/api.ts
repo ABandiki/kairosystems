@@ -483,3 +483,72 @@ export const practiceApi = {
     return apiFetch<AppointmentTypeSetting[]>('/practices/current/appointment-types');
   },
 };
+
+// Note type
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  noteType: string;
+  patientId: string;
+  patientName: string;
+  createdAt: string;
+  createdBy: string;
+  colorCode?: string;
+  headerImage?: string;
+  footerImage?: string;
+}
+
+// Notes API
+export const notesApi = {
+  getAll: async (params?: {
+    search?: string;
+    noteType?: string;
+    patientId?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<Note>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.noteType) searchParams.set('noteType', params.noteType);
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<Note>>(`/notes${query ? `?${query}` : ''}`);
+  },
+
+  getById: async (id: string): Promise<Note> => {
+    return apiFetch<Note>(`/notes/${id}`);
+  },
+
+  create: async (data: {
+    title: string;
+    content: string;
+    noteType: string;
+    patientId: string;
+    colorCode?: string;
+    headerImage?: string;
+    footerImage?: string;
+    appointmentId?: string;
+  }): Promise<Note> => {
+    return apiFetch<Note>('/notes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<Note>): Promise<Note> => {
+    return apiFetch<Note>(`/notes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/notes/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};

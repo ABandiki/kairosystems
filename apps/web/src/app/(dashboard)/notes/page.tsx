@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Plus,
   Search,
   FileText,
@@ -38,58 +37,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
-import { usePatients } from '@/hooks/use-api';
+import { useNotes } from '@/hooks/use-api';
+import { notesApi, Note } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
-
-// Note interface
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  noteType: string;
-  patientId: string;
-  patientName: string;
-  createdAt: string;
-  createdBy: string;
-  colorCode?: string;
-}
-
-// Mock notes data
-const mockNotes: Note[] = [
-  {
-    id: '1',
-    title: 'Initial Consultation',
-    content: 'Patient presented with persistent cough for 2 weeks. No fever. Prescribed cough suppressant.',
-    noteType: 'CONSULTATION',
-    patientId: 'pat-001',
-    patientName: 'Tapiwa Madziva',
-    createdAt: '2026-02-01T10:30:00Z',
-    createdBy: 'Dr. Tatenda Chikwanha',
-    colorCode: '#03989E',
-  },
-  {
-    id: '2',
-    title: 'Follow-up Visit',
-    content: 'Cough has improved significantly. Patient reports better sleep.',
-    noteType: 'FOLLOW_UP',
-    patientId: 'pat-002',
-    patientName: 'Nyasha Chikowore',
-    createdAt: '2026-02-03T14:00:00Z',
-    createdBy: 'Dr. Tatenda Chikwanha',
-    colorCode: '#4CBD90',
-  },
-  {
-    id: '3',
-    title: 'Lab Results Review',
-    content: 'Blood test results normal. Cholesterol levels within healthy range.',
-    noteType: 'LAB_REVIEW',
-    patientId: 'pat-003',
-    patientName: 'Farai Zvobgo',
-    createdAt: '2026-01-28T09:15:00Z',
-    createdBy: 'Nurse Rudo Mutasa',
-    colorCode: '#F59E0B',
-  },
-];
 
 const noteTypeColors: Record<string, string> = {
   CONSULTATION: 'bg-teal-100 text-teal-800',
@@ -97,6 +47,8 @@ const noteTypeColors: Record<string, string> = {
   LAB_REVIEW: 'bg-amber-100 text-amber-800',
   REFERRAL: 'bg-cyan-100 text-cyan-800',
   PHONE_CALL: 'bg-purple-100 text-purple-800',
+  PRESCRIPTION: 'bg-blue-100 text-blue-800',
+  DISCHARGE: 'bg-orange-100 text-orange-800',
   OTHER: 'bg-gray-100 text-gray-800',
 };
 
@@ -105,7 +57,17 @@ export default function NotesPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [notes, setNotes] = useState<Note[]>(mockNotes);
+
+  const canFetch = !authLoading && !!user;
+  const { data: notesData, isLoading: notesLoading, refetch } = useNotes(
+    {
+      search: searchQuery || undefined,
+      noteType: typeFilter !== 'all' ? typeFilter : undefined,
+    },
+    canFetch
+  );
+
+  const notes = notesData?.data || [];
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,7 +75,7 @@ export default function NotesPage() {
     }
   }, [user, authLoading, router]);
 
-  if (authLoading) {
+  if (authLoading || notesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -125,15 +87,6 @@ export default function NotesPage() {
     return null;
   }
 
-  const filteredNotes = notes.filter((note) => {
-    const matchesSearch =
-      note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || note.noteType === typeFilter;
-    return matchesSearch && matchesType;
-  });
-
   const formatDateTime = (date: string) => {
     try {
       return format(parseISO(date), 'dd MMM yyyy, HH:mm');
@@ -142,8 +95,16 @@ export default function NotesPage() {
     }
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    setNotes(notes.filter(n => n.id !== noteId));
+  const handleDeleteNote = async (noteId: string) => {
+    if (window.confirm('Are you sure you want to delete this note?')) {
+      try {
+        await notesApi.delete(noteId);
+        refetch();
+      } catch (error) {
+        console.error('Failed to delete note:', error);
+        alert('Failed to delete note');
+      }
+    }
   };
 
   return (
@@ -184,6 +145,8 @@ export default function NotesPage() {
                 <SelectItem value="LAB_REVIEW">Lab Review</SelectItem>
                 <SelectItem value="REFERRAL">Referral</SelectItem>
                 <SelectItem value="PHONE_CALL">Phone Call</SelectItem>
+                <SelectItem value="PRESCRIPTION">Prescription</SelectItem>
+                <SelectItem value="DISCHARGE">Discharge</SelectItem>
                 <SelectItem value="OTHER">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -193,7 +156,7 @@ export default function NotesPage() {
 
       {/* Notes Table */}
       <Card>
-        {filteredNotes.length > 0 ? (
+        {notes.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -206,12 +169,14 @@ export default function NotesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredNotes.map((note) => (
+              {notes.map((note) => (
                 <TableRow key={note.id} className="cursor-pointer hover:bg-gray-50">
                   <TableCell>
                     <div>
                       <p className="font-medium">{note.title}</p>
-                      <p className="text-sm text-gray-500 truncate max-w-xs">{note.content}</p>
+                      <p className="text-sm text-gray-500 truncate max-w-xs">
+                        {note.content.replace(/<[^>]*>/g, '').substring(0, 100)}
+                      </p>
                     </div>
                   </TableCell>
                   <TableCell>{note.patientName}</TableCell>

@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { usePatients } from '@/hooks/use-api';
+import { notesApi } from '@/lib/api';
 
 export default function CreateNotePage() {
   const router = useRouter();
@@ -163,33 +164,28 @@ export default function CreateNotePage() {
   };
 
   const handleSubmit = async () => {
-    if (!title || !patientId || !contentRef.current?.innerHTML) {
+    if (!title || !patientId || !noteType || !contentRef.current?.innerHTML) {
       alert('Please fill in all required fields');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // In production, this would call an API to save the note
-      const noteData = {
+      await notesApi.create({
         title,
         noteType,
         patientId,
-        relatedVisit,
         colorCode,
         content: contentRef.current?.innerHTML,
-        headerImage,
-        footerImage,
-        createdBy: user?.id,
-      };
-      console.log('Saving note:', noteData);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        headerImage: headerImage || undefined,
+        footerImage: footerImage || undefined,
+        appointmentId: relatedVisit !== 'none' ? relatedVisit : undefined,
+      });
 
       router.push('/notes');
     } catch (err) {
       console.error('Failed to save note:', err);
+      alert('Failed to save note. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
