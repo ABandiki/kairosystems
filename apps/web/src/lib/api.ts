@@ -465,6 +465,20 @@ export const practiceApi = {
     });
   },
 
+  updateRoom: async (id: string, data: Partial<Room>): Promise<Room> => {
+    return apiFetch<Room>(`/practices/current/rooms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updatePharmacy: async (id: string, data: Partial<Pharmacy>): Promise<Pharmacy> => {
+    return apiFetch<Pharmacy>(`/practices/current/pharmacies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   getAppointmentTypes: async (): Promise<AppointmentTypeSetting[]> => {
     return apiFetch<AppointmentTypeSetting[]>('/practices/current/appointment-types');
   },

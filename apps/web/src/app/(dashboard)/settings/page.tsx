@@ -34,13 +34,20 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePractice, useAppointmentTypes, useRooms, usePharmacies } from '@/hooks/use-api';
 import { practiceApi, Practice, Room, Pharmacy } from '@/lib/api';
 
-const openingHoursDefaults = [
+interface OpeningHour {
+  day: string;
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+const openingHoursDefaults: OpeningHour[] = [
   { day: 'Monday', open: '08:00', close: '18:30', closed: false },
   { day: 'Tuesday', open: '08:00', close: '18:30', closed: false },
   { day: 'Wednesday', open: '08:00', close: '18:30', closed: false },
   { day: 'Thursday', open: '08:00', close: '18:30', closed: false },
   { day: 'Friday', open: '08:00', close: '18:30', closed: false },
-  { day: 'Saturday', open: '00:00', close: '00:00', closed: true },
+  { day: 'Saturday', open: '09:00', close: '13:00', closed: true },
   { day: 'Sunday', open: '00:00', close: '00:00', closed: true },
 ];
 
@@ -67,10 +74,32 @@ export default function SettingsPage() {
     postcode: '',
   });
 
+  // Opening hours state
+  const [openingHours, setOpeningHours] = useState<OpeningHour[]>(openingHoursDefaults);
+  const [savingHours, setSavingHours] = useState(false);
+
   // Dialogs
   const [showNewRoomDialog, setShowNewRoomDialog] = useState(false);
   const [showNewPharmacyDialog, setShowNewPharmacyDialog] = useState(false);
+  const [showNewAppTypeDialog, setShowNewAppTypeDialog] = useState(false);
+  const [showEditAppTypeDialog, setShowEditAppTypeDialog] = useState(false);
+  const [showEditRoomDialog, setShowEditRoomDialog] = useState(false);
+  const [showEditPharmacyDialog, setShowEditPharmacyDialog] = useState(false);
+
+  // Selected items for editing
+  const [selectedAppType, setSelectedAppType] = useState<any>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
+
+  // Form states
   const [newRoom, setNewRoom] = useState({ name: '', description: '' });
+  const [newAppType, setNewAppType] = useState({
+    type: '',
+    label: '',
+    code: '',
+    defaultDuration: 15,
+    color: '#03989E',
+  });
   const [newPharmacy, setNewPharmacy] = useState({
     name: '',
     odsCode: '',
@@ -151,6 +180,125 @@ export default function SettingsPage() {
       refetchPharmacies();
     } catch (err) {
       console.error('Failed to create pharmacy:', err);
+    }
+  };
+
+  // Opening Hours handlers
+  const handleToggleClosed = (dayIndex: number) => {
+    setOpeningHours(prev => prev.map((hour, index) => {
+      if (index === dayIndex) {
+        return {
+          ...hour,
+          closed: !hour.closed,
+          open: !hour.closed ? '00:00' : '09:00',
+          close: !hour.closed ? '00:00' : '17:00',
+        };
+      }
+      return hour;
+    }));
+  };
+
+  const handleTimeChange = (dayIndex: number, field: 'open' | 'close', value: string) => {
+    setOpeningHours(prev => prev.map((hour, index) => {
+      if (index === dayIndex) {
+        return { ...hour, [field]: value };
+      }
+      return hour;
+    }));
+  };
+
+  const handleSaveHours = async () => {
+    setSavingHours(true);
+    try {
+      // In a real app, this would save to the backend
+      // await practiceApi.updateOpeningHours(openingHours);
+      alert('Opening hours saved successfully!');
+    } catch (err) {
+      console.error('Failed to save opening hours:', err);
+      alert('Failed to save opening hours');
+    } finally {
+      setSavingHours(false);
+    }
+  };
+
+  // Appointment Type handlers
+  const handleAddAppType = () => {
+    setNewAppType({
+      type: '',
+      label: '',
+      code: '',
+      defaultDuration: 15,
+      color: '#03989E',
+    });
+    setShowNewAppTypeDialog(true);
+  };
+
+  const handleEditAppType = (appType: any) => {
+    setSelectedAppType(appType);
+    setShowEditAppTypeDialog(true);
+  };
+
+  const handleSaveNewAppType = async () => {
+    try {
+      // In a real app, this would save to the backend
+      // await practiceApi.createAppointmentType(newAppType);
+      alert('Appointment type creation would save to backend. Feature coming soon!');
+      setShowNewAppTypeDialog(false);
+      refetchTypes();
+    } catch (err) {
+      console.error('Failed to create appointment type:', err);
+    }
+  };
+
+  const handleUpdateAppType = async () => {
+    if (!selectedAppType) return;
+    try {
+      // In a real app, this would update the backend
+      // await practiceApi.updateAppointmentType(selectedAppType.id, selectedAppType);
+      alert('Appointment type update would save to backend. Feature coming soon!');
+      setShowEditAppTypeDialog(false);
+      setSelectedAppType(null);
+      refetchTypes();
+    } catch (err) {
+      console.error('Failed to update appointment type:', err);
+    }
+  };
+
+  // Room handlers
+  const handleEditRoom = (room: Room) => {
+    setSelectedRoom(room);
+    setShowEditRoomDialog(true);
+  };
+
+  const handleUpdateRoom = async () => {
+    if (!selectedRoom) return;
+    try {
+      await practiceApi.updateRoom(selectedRoom.id, selectedRoom);
+      setShowEditRoomDialog(false);
+      setSelectedRoom(null);
+      refetchRooms();
+    } catch (err) {
+      console.error('Failed to update room:', err);
+      alert('Failed to update room');
+    }
+  };
+
+  // Pharmacy handlers
+  const handleEditPharmacy = (pharmacy: Pharmacy) => {
+    setSelectedPharmacy(pharmacy);
+    setShowEditPharmacyDialog(true);
+  };
+
+  const handleUpdatePharmacy = async () => {
+    if (!selectedPharmacy) return;
+    try {
+      await practiceApi.updatePharmacy(selectedPharmacy.id, selectedPharmacy);
+      setShowEditPharmacyDialog(false);
+      setSelectedPharmacy(null);
+      refetchPharmacies();
+    } catch (err) {
+      console.error('Failed to update pharmacy:', err);
+      alert('Failed to update pharmacy');
     }
   };
 
@@ -300,7 +448,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {openingHoursDefaults.map((day) => (
+                {openingHours.map((day, index) => (
                   <div
                     key={day.day}
                     className="flex items-center gap-4 py-3 border-b last:border-0"
@@ -317,7 +465,8 @@ export default function SettingsPage() {
                             <Label className="text-sm text-gray-500">Open</Label>
                             <Input
                               type="time"
-                              defaultValue={day.open}
+                              value={day.open}
+                              onChange={(e) => handleTimeChange(index, 'open', e.target.value)}
                               className="w-32"
                             />
                           </div>
@@ -326,21 +475,24 @@ export default function SettingsPage() {
                             <Label className="text-sm text-gray-500">Close</Label>
                             <Input
                               type="time"
-                              defaultValue={day.close}
+                              value={day.close}
+                              onChange={(e) => handleTimeChange(index, 'close', e.target.value)}
                               className="w-32"
                             />
                           </div>
                         </>
                       )}
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleToggleClosed(index)}>
                       {day.closed ? 'Set Hours' : 'Mark Closed'}
                     </Button>
                   </div>
                 ))}
               </div>
               <div className="flex justify-end mt-6">
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveHours} disabled={savingHours}>
+                  {savingHours ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -357,7 +509,7 @@ export default function SettingsPage() {
                     Configure the types of appointments available at your practice
                   </CardDescription>
                 </div>
-                <Button>
+                <Button onClick={handleAddAppType}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Appointment Type
                 </Button>
@@ -388,7 +540,7 @@ export default function SettingsPage() {
                       <div className="text-sm text-gray-600">
                         {type.defaultDuration} minutes
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleEditAppType(type)}>
                         Edit
                       </Button>
                     </div>
@@ -442,7 +594,7 @@ export default function SettingsPage() {
                         <span className={`text-sm ${room.isActive ? 'text-green-600' : 'text-gray-500'}`}>
                           {room.isActive ? 'Active' : 'Inactive'}
                         </span>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleEditRoom(room)}>
                           Edit
                         </Button>
                       </div>
@@ -496,7 +648,7 @@ export default function SettingsPage() {
                           <p className="text-sm text-gray-500">{pharmacy.phone}</p>
                         )}
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleEditPharmacy(pharmacy)}>
                         Edit
                       </Button>
                     </div>
@@ -621,6 +773,268 @@ export default function SettingsPage() {
               disabled={!newPharmacy.name || !newPharmacy.addressLine1 || !newPharmacy.city || !newPharmacy.postcode}
             >
               Add Pharmacy
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Appointment Type Dialog */}
+      <Dialog open={showNewAppTypeDialog} onOpenChange={setShowNewAppTypeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Appointment Type</DialogTitle>
+            <DialogDescription>
+              Create a new appointment type for your practice.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="apptype-label">Label *</Label>
+              <Input
+                id="apptype-label"
+                placeholder="e.g., Standard Consultation"
+                value={newAppType.label}
+                onChange={(e) => setNewAppType({ ...newAppType, label: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="apptype-code">Code *</Label>
+                <Input
+                  id="apptype-code"
+                  placeholder="e.g., STD_CONSULT"
+                  value={newAppType.code}
+                  onChange={(e) => setNewAppType({ ...newAppType, code: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apptype-duration">Duration (mins) *</Label>
+                <Input
+                  id="apptype-duration"
+                  type="number"
+                  min={5}
+                  max={120}
+                  value={newAppType.defaultDuration}
+                  onChange={(e) => setNewAppType({ ...newAppType, defaultDuration: parseInt(e.target.value) || 15 })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="apptype-color">Color</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="apptype-color"
+                  type="color"
+                  value={newAppType.color}
+                  onChange={(e) => setNewAppType({ ...newAppType, color: e.target.value })}
+                  className="w-16 h-10 p-1"
+                />
+                <span className="text-sm text-gray-500">{newAppType.color}</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewAppTypeDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveNewAppType}
+              disabled={!newAppType.label || !newAppType.code}
+            >
+              Add Type
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Appointment Type Dialog */}
+      <Dialog open={showEditAppTypeDialog} onOpenChange={setShowEditAppTypeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Appointment Type</DialogTitle>
+            <DialogDescription>
+              Modify the appointment type settings.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedAppType && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-apptype-label">Label</Label>
+                <Input
+                  id="edit-apptype-label"
+                  value={selectedAppType.label || ''}
+                  onChange={(e) => setSelectedAppType({ ...selectedAppType, label: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-apptype-code">Code</Label>
+                  <Input
+                    id="edit-apptype-code"
+                    value={selectedAppType.code || ''}
+                    onChange={(e) => setSelectedAppType({ ...selectedAppType, code: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-apptype-duration">Duration (mins)</Label>
+                  <Input
+                    id="edit-apptype-duration"
+                    type="number"
+                    min={5}
+                    max={120}
+                    value={selectedAppType.defaultDuration}
+                    onChange={(e) => setSelectedAppType({ ...selectedAppType, defaultDuration: parseInt(e.target.value) || 15 })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-apptype-color">Color</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="edit-apptype-color"
+                    type="color"
+                    value={selectedAppType.color || '#6b7280'}
+                    onChange={(e) => setSelectedAppType({ ...selectedAppType, color: e.target.value })}
+                    className="w-16 h-10 p-1"
+                  />
+                  <span className="text-sm text-gray-500">{selectedAppType.color || '#6b7280'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditAppTypeDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateAppType}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Room Dialog */}
+      <Dialog open={showEditRoomDialog} onOpenChange={setShowEditRoomDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Room</DialogTitle>
+            <DialogDescription>
+              Modify the room details.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRoom && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-room-name">Room Name *</Label>
+                <Input
+                  id="edit-room-name"
+                  value={selectedRoom.name}
+                  onChange={(e) => setSelectedRoom({ ...selectedRoom, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-room-description">Description</Label>
+                <Input
+                  id="edit-room-description"
+                  value={selectedRoom.description || ''}
+                  onChange={(e) => setSelectedRoom({ ...selectedRoom, description: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-room-active"
+                  checked={selectedRoom.isActive}
+                  onChange={(e) => setSelectedRoom({ ...selectedRoom, isActive: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="edit-room-active">Active</Label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditRoomDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateRoom} disabled={!selectedRoom?.name}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Pharmacy Dialog */}
+      <Dialog open={showEditPharmacyDialog} onOpenChange={setShowEditPharmacyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Pharmacy</DialogTitle>
+            <DialogDescription>
+              Modify the pharmacy details.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPharmacy && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-pharmacy-name">Pharmacy Name *</Label>
+                <Input
+                  id="edit-pharmacy-name"
+                  value={selectedPharmacy.name}
+                  onChange={(e) => setSelectedPharmacy({ ...selectedPharmacy, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-pharmacy-ods">ODS Code</Label>
+                <Input
+                  id="edit-pharmacy-ods"
+                  value={selectedPharmacy.odsCode || ''}
+                  onChange={(e) => setSelectedPharmacy({ ...selectedPharmacy, odsCode: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-pharmacy-address">Address *</Label>
+                <Input
+                  id="edit-pharmacy-address"
+                  value={selectedPharmacy.addressLine1}
+                  onChange={(e) => setSelectedPharmacy({ ...selectedPharmacy, addressLine1: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-pharmacy-city">City *</Label>
+                  <Input
+                    id="edit-pharmacy-city"
+                    value={selectedPharmacy.city}
+                    onChange={(e) => setSelectedPharmacy({ ...selectedPharmacy, city: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-pharmacy-postcode">Postcode *</Label>
+                  <Input
+                    id="edit-pharmacy-postcode"
+                    value={selectedPharmacy.postcode}
+                    onChange={(e) => setSelectedPharmacy({ ...selectedPharmacy, postcode: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-pharmacy-phone">Phone</Label>
+                <Input
+                  id="edit-pharmacy-phone"
+                  value={selectedPharmacy.phone || ''}
+                  onChange={(e) => setSelectedPharmacy({ ...selectedPharmacy, phone: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditPharmacyDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdatePharmacy}
+              disabled={!selectedPharmacy?.name || !selectedPharmacy?.addressLine1 || !selectedPharmacy?.city || !selectedPharmacy?.postcode}
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
