@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Phone, Shield, Calendar, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
+import { staffApi } from '@/lib/api';
 
 const roleLabels: Record<string, string> = {
   GP_PARTNER: 'GP Partner',
@@ -33,13 +42,111 @@ const roleLabels: Record<string, string> = {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, logout } = useAuth();
+  const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Dialog states
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [show2FADialog, setShow2FADialog] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        firstName: user.firstName,
+        lastName: user.lastName,
+      });
+    }
+  }, [user]);
+
+  const handleChangePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // For now, just show an alert - file upload would require backend support
+      alert('Photo upload feature is coming soon! Please contact your administrator to update your photo.');
+    }
+  };
+
+  const handleEditProfile = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (user) {
+      setEditForm({
+        firstName: user.firstName,
+        lastName: user.lastName,
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      await staffApi.update(user.id, editForm);
+      setIsEditing(false);
+      if (refreshUser) {
+        await refreshUser();
+      }
+      alert('Profile updated successfully!');
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = () => {
+    setPasswordForm({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    setShowPasswordDialog(true);
+  };
+
+  const handleSubmitPassword = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert('New passwords do not match!');
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      alert('Password must be at least 8 characters long.');
+      return;
+    }
+    // Password change would require backend API support
+    alert('Password change feature is coming soon! Please contact your administrator.');
+    setShowPasswordDialog(false);
+  };
+
+  const handleEnable2FA = () => {
+    setShow2FADialog(true);
+  };
 
   if (authLoading) {
     return (
@@ -86,7 +193,14 @@ export default function ProfilePage() {
                 {roleLabels[user.role] || user.role.replace(/_/g, ' ')}
               </Badge>
               <p className="text-sm text-gray-500 mt-2">{user.email}</p>
-              <Button variant="outline" size="sm" className="mt-4">
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handlePhotoSelected}
+              />
+              <Button variant="outline" size="sm" className="mt-4" onClick={handleChangePhoto}>
                 Change Photo
               </Button>
             </div>
@@ -105,11 +219,23 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input id="firstName" value={user.firstName} readOnly />
+                <Input
+                  id="firstName"
+                  value={isEditing ? editForm.firstName : user.firstName}
+                  readOnly={!isEditing}
+                  onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                  className={isEditing ? 'border-primary' : ''}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input id="lastName" value={user.lastName} readOnly />
+                <Input
+                  id="lastName"
+                  value={isEditing ? editForm.lastName : user.lastName}
+                  readOnly={!isEditing}
+                  onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                  className={isEditing ? 'border-primary' : ''}
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -132,8 +258,16 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline">Edit Profile</Button>
-              <Button>Save Changes</Button>
+              {isEditing ? (
+                <>
+                  <Button variant="outline" onClick={handleCancelEdit}>Cancel</Button>
+                  <Button onClick={handleSaveChanges} disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" onClick={handleEditProfile}>Edit Profile</Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -152,14 +286,14 @@ export default function ProfilePage() {
                 <p className="font-medium">Password</p>
                 <p className="text-sm text-gray-500">Last changed: Never</p>
               </div>
-              <Button variant="outline">Change Password</Button>
+              <Button variant="outline" onClick={handleChangePassword}>Change Password</Button>
             </div>
             <div className="flex items-center justify-between py-4 border-b">
               <div>
                 <p className="font-medium">Two-Factor Authentication</p>
                 <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
               </div>
-              <Button variant="outline">Enable 2FA</Button>
+              <Button variant="outline" onClick={handleEnable2FA}>Enable 2FA</Button>
             </div>
             <div className="flex items-center justify-between py-4">
               <div>
@@ -171,6 +305,82 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Enter your current password and choose a new one.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitPassword}>
+              Change Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2FA Dialog */}
+      <Dialog open={show2FADialog} onOpenChange={setShow2FADialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Two-Factor Authentication</DialogTitle>
+            <DialogDescription>
+              Enable two-factor authentication for enhanced security.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password.
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-500">
+                This feature is coming soon. Please contact your practice administrator for more information about enabling 2FA on your account.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShow2FADialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
