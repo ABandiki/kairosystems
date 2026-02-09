@@ -538,7 +538,7 @@ export default function FormBuilderPage() {
         description: form.description,
         language: form.language,
         isPublic: form.isPublic,
-        status: form.isActive ? "ACTIVE" : "DRAFT",
+        status: (form.isActive ? "ACTIVE" : "DRAFT") as "ACTIVE" | "DRAFT",
         questions: form.questions,
       };
 
@@ -546,7 +546,7 @@ export default function FormBuilderPage() {
         const created = await formTemplatesApi.create(saveData);
         router.push(`/forms/templates/${created.id}/builder`);
       } else {
-        await formTemplatesApi.update(formId, saveData);
+        await formTemplatesApi.update(formId, saveData as any);
       }
       alert("Template saved successfully!");
     } catch (error) {
