@@ -142,6 +142,9 @@ model Practice {
   rooms         Room[]
   appointmentTypeSettings AppointmentTypeSetting[]
   notes         Note[]
+  formTemplates FormTemplate[]
+  formSubmissions FormSubmission[]
+  invoices      Invoice[]
 
   @@map("practices")
 }
@@ -221,6 +224,9 @@ model User {
   reviewedDocuments Document[]      @relation("ReviewerDocuments")
   registeredPatients Patient[]      @relation("RegisteredGP")
   createdNotes      Note[]          @relation("CreatedNotes")
+  createdTemplates  FormTemplate[]  @relation("CreatedTemplates")
+  submittedForms    FormSubmission[] @relation("SubmittedForms")
+  createdInvoices   Invoice[]       @relation("CreatedInvoices")
 
   @@map("users")
 }
@@ -289,6 +295,8 @@ model Patient {
   documents           Document[]
   medicalHistory      MedicalHistory[]
   notes               Note[]
+  formSubmissions     FormSubmission[]
+  invoices            Invoice[]
 
   @@index([practiceId, lastName, firstName])
   @@index([nhsNumber])
@@ -358,6 +366,7 @@ model Appointment {
   room            Room?             @relation(fields: [roomId], references: [id])
   consultation    Consultation?
   clinicalNotes   Note[]
+  invoices        Invoice[]
 
   @@index([practiceId, scheduledStart])
   @@index([clinicianId, scheduledStart])
@@ -551,4 +560,141 @@ model Note {
   @@index([practiceId, createdAt])
   @@index([patientId])
   @@map("notes")
+}
+
+// ==================== FORM TEMPLATES ====================
+
+enum FormTemplateCategory {
+  INTAKE
+  ASSESSMENT
+  CONSENT
+  QUESTIONNAIRE
+  CUSTOM
+}
+
+enum FormTemplateStatus {
+  ACTIVE
+  DRAFT
+}
+
+model FormTemplate {
+  id          String                @id @default(cuid())
+  practiceId  String
+  createdById String
+
+  name        String
+  description String?
+  category    FormTemplateCategory  @default(CUSTOM)
+  status      FormTemplateStatus    @default(DRAFT)
+  language    String                @default("English")
+  isPublic    Boolean               @default(false)
+  questions   Json                  // Store form questions as JSON
+  questionCount Int                 @default(0)
+
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  // Relations
+  practice    Practice              @relation(fields: [practiceId], references: [id])
+  createdBy   User                  @relation("CreatedTemplates", fields: [createdById], references: [id])
+  formSubmissions FormSubmission[]
+
+  @@index([practiceId, createdAt])
+  @@map("form_templates")
+}
+
+model FormSubmission {
+  id            String        @id @default(cuid())
+  practiceId    String
+  templateId    String
+  patientId     String
+  submittedById String?
+
+  answers       Json          // Store form answers as JSON
+  score         Int?          // For assessment forms
+  scoreDetails  Json?         // Breakdown of scoring
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  practice      Practice      @relation(fields: [practiceId], references: [id])
+  template      FormTemplate  @relation(fields: [templateId], references: [id])
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  submittedBy   User?         @relation("SubmittedForms", fields: [submittedById], references: [id])
+
+  @@index([practiceId, createdAt])
+  @@index([patientId])
+  @@map("form_submissions")
+}
+
+// ==================== INVOICES / BILLING ====================
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  CHEQUE
+  INSURANCE
+}
+
+model Invoice {
+  id              String          @id @default(cuid())
+  practiceId      String
+  patientId       String
+  createdById     String
+  appointmentId   String?
+
+  invoiceNumber   String
+  status          InvoiceStatus   @default(DRAFT)
+
+  issueDate       DateTime
+  dueDate         DateTime
+  paidAt          DateTime?
+
+  subtotal        Float           @default(0)
+  tax             Float           @default(0)
+  discount        Float           @default(0)
+  total           Float           @default(0)
+
+  paymentMethod   PaymentMethod?
+  notes           String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  practice        Practice        @relation(fields: [practiceId], references: [id])
+  patient         Patient         @relation(fields: [patientId], references: [id])
+  createdBy       User            @relation("CreatedInvoices", fields: [createdById], references: [id])
+  appointment     Appointment?    @relation(fields: [appointmentId], references: [id])
+  items           InvoiceItem[]
+
+  @@unique([practiceId, invoiceNumber])
+  @@index([practiceId, issueDate])
+  @@index([patientId])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id            String    @id @default(cuid())
+  invoiceId     String
+
+  description   String
+  code          String?
+  quantity      Int       @default(1)
+  unitPrice     Float
+  total         Float
+
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
 }

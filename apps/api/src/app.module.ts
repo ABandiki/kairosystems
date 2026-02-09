@@ -7,6 +7,8 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { StaffModule } from './modules/staff/staff.module';
 import { PracticesModule } from './modules/practices/practices.module';
 import { NotesModule } from './modules/notes/notes.module';
+import { FormTemplatesModule } from './modules/form-templates/form-templates.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -23,6 +25,8 @@ import { PrismaModule } from './prisma/prisma.module';
     StaffModule,
     PracticesModule,
     NotesModule,
+    FormTemplatesModule,
+    InvoicesModule,
   ],
 })
 export class AppModule {}

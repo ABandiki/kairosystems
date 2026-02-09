@@ -7,6 +7,8 @@ import {
   staffApi,
   practiceApi,
   notesApi,
+  formTemplatesApi,
+  invoicesApi,
   Patient,
   Appointment,
   Staff,
@@ -17,6 +19,9 @@ import {
   DashboardStats,
   PatientStats,
   Note,
+  FormTemplate,
+  Invoice,
+  BillingStats,
   PaginatedResponse,
   getAccessToken,
   ApiError,
@@ -225,4 +230,48 @@ export function useNotes(params?: {
 
 export function useNote(id: string, enabled: boolean = true) {
   return useApiQuery<Note>(() => notesApi.getById(id), [id], enabled && !!id);
+}
+
+// Form Template hooks
+export function useFormTemplates(params?: {
+  search?: string;
+  category?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}, enabled: boolean = true) {
+  return useApiQuery<PaginatedResponse<FormTemplate>>(
+    () => formTemplatesApi.getAll(params),
+    [params?.search, params?.category, params?.status, params?.page, params?.pageSize],
+    enabled
+  );
+}
+
+export function useFormTemplate(id: string, enabled: boolean = true) {
+  return useApiQuery<FormTemplate>(() => formTemplatesApi.getById(id), [id], enabled && !!id);
+}
+
+// Invoice hooks
+export function useInvoices(params?: {
+  search?: string;
+  status?: string;
+  patientId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}, enabled: boolean = true) {
+  return useApiQuery<PaginatedResponse<Invoice>>(
+    () => invoicesApi.getAll(params),
+    [params?.search, params?.status, params?.patientId, params?.startDate, params?.endDate, params?.page, params?.pageSize],
+    enabled
+  );
+}
+
+export function useInvoice(id: string, enabled: boolean = true) {
+  return useApiQuery<Invoice>(() => invoicesApi.getById(id), [id], enabled && !!id);
+}
+
+export function useBillingStats(enabled: boolean = true) {
+  return useApiQuery<BillingStats>(() => invoicesApi.getStats(), [], enabled);
 }

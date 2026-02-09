@@ -48,6 +48,7 @@ import {
   HelpCircle,
   GripVertical,
 } from "lucide-react";
+import { formTemplatesApi } from "@/lib/api";
 
 // Types
 interface FormField {
@@ -294,13 +295,37 @@ export default function FormBuilderPage() {
     fieldId: string;
     options: string[];
   } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Load form data
-    setForm(getDefaultForm(formId));
-    // Auto-select first question
-    setSelectedQuestionId("q1");
-  }, [formId]);
+    const loadForm = async () => {
+      if (isNewForm) {
+        setForm(getDefaultForm(formId));
+        setSelectedQuestionId("q1");
+      } else {
+        try {
+          const existingForm = await formTemplatesApi.getById(formId);
+          setForm({
+            id: existingForm.id,
+            name: existingForm.name,
+            description: existingForm.description || "",
+            language: existingForm.language || "English",
+            isActive: existingForm.status === "ACTIVE",
+            isPublic: existingForm.isPublic || false,
+            questions: existingForm.questions || [],
+          });
+          if (existingForm.questions?.length > 0) {
+            setSelectedQuestionId(existingForm.questions[0].id);
+          }
+        } catch (error) {
+          console.error('Failed to load template:', error);
+          setForm(getDefaultForm(formId));
+          setSelectedQuestionId("q1");
+        }
+      }
+    };
+    loadForm();
+  }, [formId, isNewForm]);
 
   const selectedQuestion = form?.questions.find(
     (q) => q.id === selectedQuestionId
@@ -503,10 +528,33 @@ export default function FormBuilderPage() {
     setEditingFieldOptions(null);
   };
 
-  const handleSaveTemplate = () => {
-    console.log("Saving template:", form);
-    // In real app, save to API
-    alert("Template saved successfully!");
+  const handleSaveTemplate = async () => {
+    if (!form) return;
+
+    setIsSaving(true);
+    try {
+      const saveData = {
+        name: form.name,
+        description: form.description,
+        language: form.language,
+        isPublic: form.isPublic,
+        status: form.isActive ? "ACTIVE" : "DRAFT",
+        questions: form.questions,
+      };
+
+      if (isNewForm) {
+        const created = await formTemplatesApi.create(saveData);
+        router.push(`/forms/templates/${created.id}/builder`);
+      } else {
+        await formTemplatesApi.update(formId, saveData);
+      }
+      alert("Template saved successfully!");
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      alert('Failed to save template');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleOptionsExpanded = (fieldId: string) => {
@@ -547,9 +595,10 @@ export default function FormBuilderPage() {
           <Button
             className="bg-[#03989E] hover:bg-[#028a8f] gap-2"
             onClick={handleSaveTemplate}
+            disabled={isSaving}
           >
             <Save className="h-4 w-4" />
-            Save Template
+            {isSaving ? 'Saving...' : 'Save Template'}
           </Button>
         </div>
 

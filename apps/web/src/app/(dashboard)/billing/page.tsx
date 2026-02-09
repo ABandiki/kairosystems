@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -48,50 +48,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
-
-// Mock invoice data - in production this would come from API
-const mockInvoices = [
-  {
-    id: 'INV-2026-001',
-    patientName: 'Tapiwa Madziva',
-    patientId: 'pat-001',
-    issueDate: '2026-02-01',
-    dueDate: '2026-03-01',
-    amount: 150.00,
-    status: 'PAID',
-    paymentMethod: 'Card',
-  },
-  {
-    id: 'INV-2026-002',
-    patientName: 'Nyasha Chikowore',
-    patientId: 'pat-002',
-    issueDate: '2026-02-01',
-    dueDate: '2026-03-01',
-    amount: 85.00,
-    status: 'PENDING',
-    paymentMethod: null,
-  },
-  {
-    id: 'INV-2026-003',
-    patientName: 'Farai Zvobgo',
-    patientId: 'pat-003',
-    issueDate: '2026-01-15',
-    dueDate: '2026-02-15',
-    amount: 220.00,
-    status: 'OVERDUE',
-    paymentMethod: null,
-  },
-  {
-    id: 'INV-2026-004',
-    patientName: 'Chiedza Mangwana',
-    patientId: 'pat-004',
-    issueDate: '2026-02-02',
-    dueDate: '2026-03-02',
-    amount: 95.00,
-    status: 'DRAFT',
-    paymentMethod: null,
-  },
-];
+import { useAuth } from '@/hooks/use-auth';
+import { useInvoices, useBillingStats } from '@/hooks/use-api';
+import { invoicesApi, Invoice } from '@/lib/api';
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   PAID: { bg: 'bg-green-100', text: 'text-green-800' },
@@ -103,6 +62,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 
 export default function BillingPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
@@ -110,22 +70,46 @@ export default function BillingPage() {
   const [selectedMonth, setSelectedMonth] = useState('2026-02');
   const [showMonthlyStatement, setShowMonthlyStatement] = useState(false);
 
-  // Calculate stats
-  const billedThisMonth = mockInvoices
-    .filter(inv => inv.issueDate.startsWith('2026-02'))
-    .reduce((sum, inv) => sum + inv.amount, 0);
+  const canFetch = !authLoading && !!user;
+  const { data: invoicesData, isLoading: invoicesLoading, refetch } = useInvoices(
+    {
+      search: searchQuery || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+    canFetch
+  );
+  const { data: billingStats, isLoading: statsLoading } = useBillingStats(canFetch);
 
-  const collectedThisMonth = mockInvoices
-    .filter(inv => inv.status === 'PAID' && inv.issueDate.startsWith('2026-02'))
-    .reduce((sum, inv) => sum + inv.amount, 0);
+  const invoices = invoicesData?.data || [];
 
-  const outstandingBalance = mockInvoices
-    .filter(inv => inv.status === 'PENDING' || inv.status === 'OVERDUE')
-    .reduce((sum, inv) => sum + inv.amount, 0);
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading || invoicesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  // Use real stats from API or fall back to calculated values
+  const billedThisMonth = billingStats?.billedThisMonth || 0;
+  const collectedThisMonth = billingStats?.collectedThisMonth || 0;
+  const outstandingBalance = billingStats?.outstandingBalance || 0;
 
   // Monthly statement calculations
   const getMonthlyStatementData = (month: string) => {
-    const monthInvoices = mockInvoices.filter(inv => inv.issueDate.startsWith(month));
+    const monthInvoices = invoices.filter(inv => inv.issueDate.startsWith(month));
     const totalBilled = monthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     const totalPaid = monthInvoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + inv.amount, 0);
     const totalPending = monthInvoices.filter(inv => inv.status === 'PENDING').reduce((sum, inv) => sum + inv.amount, 0);
@@ -167,20 +151,8 @@ export default function BillingPage() {
     alert(`Downloading monthly statement for ${getMonthName(selectedMonth)}`);
   };
 
-  // Filter invoices
-  const filteredInvoices = mockInvoices.filter(invoice => {
-    const matchesSearch =
-      invoice.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.patientName.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-
-    const matchesDateRange =
-      (!startDate || invoice.issueDate >= startDate) &&
-      (!endDate || invoice.issueDate <= endDate);
-
-    return matchesSearch && matchesStatus && matchesDateRange;
-  });
+  // invoices are already filtered from API, use directly
+  const filteredInvoices = invoices;
 
   const handleCreateInvoice = () => {
     router.push('/billing/new');
@@ -192,6 +164,18 @@ export default function BillingPage() {
 
   const handleEditInvoice = (invoiceId: string) => {
     router.push(`/billing/${invoiceId}/edit`);
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      try {
+        await invoicesApi.delete(invoiceId);
+        refetch();
+      } catch (error) {
+        console.error('Failed to delete invoice:', error);
+        alert('Failed to delete invoice');
+      }
+    }
   };
 
   return (
@@ -500,7 +484,7 @@ export default function BillingPage() {
               <TableBody>
                 {filteredInvoices.map((invoice) => (
                   <TableRow key={invoice.id} className="cursor-pointer hover:bg-gray-50">
-                    <TableCell className="font-medium">{invoice.id}</TableCell>
+                    <TableCell className="font-medium">{invoice.invoiceNumber || invoice.id}</TableCell>
                     <TableCell>{invoice.patientName}</TableCell>
                     <TableCell>{format(new Date(invoice.issueDate), 'MMM d, yyyy')}</TableCell>
                     <TableCell>{format(new Date(invoice.dueDate), 'MMM d, yyyy')}</TableCell>
@@ -537,7 +521,7 @@ export default function BillingPage() {
                             Send to Patient
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteInvoice(invoice.id)}>
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>

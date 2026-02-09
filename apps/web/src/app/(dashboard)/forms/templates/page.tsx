@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,112 +30,74 @@ import {
   Trash2,
   Calendar,
 } from "lucide-react";
-
-interface FormTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: "intake" | "assessment" | "consent" | "questionnaire" | "custom";
-  lastModified: string;
-  questionCount: number;
-  status: "active" | "draft";
-}
-
-const mockTemplates: FormTemplate[] = [
-  {
-    id: "1",
-    name: "New Patient Intake Form",
-    description: "Comprehensive intake form for new patients including demographics, medical history, and insurance information",
-    category: "intake",
-    lastModified: "2026-01-28",
-    questionCount: 13,
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "PHQ-9 Depression Screening",
-    description: "Patient Health Questionnaire for depression assessment",
-    category: "assessment",
-    lastModified: "2026-01-25",
-    questionCount: 9,
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "GAD-7 Anxiety Assessment",
-    description: "Generalized Anxiety Disorder 7-item scale",
-    category: "assessment",
-    lastModified: "2026-01-20",
-    questionCount: 7,
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "GDPR Consent Form",
-    description: "Data protection and privacy consent form",
-    category: "consent",
-    lastModified: "2026-01-15",
-    questionCount: 5,
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Treatment Consent Form",
-    description: "General consent for treatment procedures",
-    category: "consent",
-    lastModified: "2026-01-10",
-    questionCount: 4,
-    status: "active",
-  },
-  {
-    id: "6",
-    name: "Diabetes Annual Review",
-    description: "Template for annual diabetes review consultations",
-    category: "questionnaire",
-    lastModified: "2026-01-05",
-    questionCount: 15,
-    status: "draft",
-  },
-];
+import { useAuth } from "@/hooks/use-auth";
+import { useFormTemplates } from "@/hooks/use-api";
+import { formTemplatesApi, FormTemplate } from "@/lib/api";
 
 const categoryColors: Record<string, string> = {
-  intake: "bg-blue-100 text-blue-800",
-  assessment: "bg-teal-100 text-teal-800",
-  consent: "bg-amber-100 text-amber-800",
-  questionnaire: "bg-emerald-100 text-emerald-800",
-  custom: "bg-purple-100 text-purple-800",
+  INTAKE: "bg-blue-100 text-blue-800",
+  ASSESSMENT: "bg-teal-100 text-teal-800",
+  CONSENT: "bg-amber-100 text-amber-800",
+  QUESTIONNAIRE: "bg-emerald-100 text-emerald-800",
+  CUSTOM: "bg-purple-100 text-purple-800",
 };
 
 export default function FormTemplatesPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [templates, setTemplates] = useState(mockTemplates);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newFormName, setNewFormName] = useState("");
   const [newFormDescription, setNewFormDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filteredTemplates = templates.filter(
-    (template) =>
-      template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      template.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const canFetch = !authLoading && !!user;
+  const { data: templatesData, isLoading: templatesLoading, refetch } = useFormTemplates(
+    { search: searchQuery || undefined },
+    canFetch
   );
 
-  const handleCreateTemplate = () => {
+  const templates = templatesData?.data || [];
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading || templatesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const handleCreateTemplate = async () => {
     if (newFormName.trim()) {
-      const newTemplate: FormTemplate = {
-        id: Date.now().toString(),
-        name: newFormName,
-        description: newFormDescription,
-        category: "custom",
-        lastModified: new Date().toISOString().split("T")[0],
-        questionCount: 0,
-        status: "draft",
-      };
-      setTemplates([...templates, newTemplate]);
-      setShowNewDialog(false);
-      setNewFormName("");
-      setNewFormDescription("");
-      router.push(`/forms/templates/${newTemplate.id}/builder`);
+      setIsSubmitting(true);
+      try {
+        const newTemplate = await formTemplatesApi.create({
+          name: newFormName,
+          description: newFormDescription,
+          category: "CUSTOM",
+          status: "DRAFT",
+          questions: [],
+        });
+        setShowNewDialog(false);
+        setNewFormName("");
+        setNewFormDescription("");
+        router.push(`/forms/templates/${newTemplate.id}/builder`);
+      } catch (error) {
+        console.error('Failed to create template:', error);
+        alert('Failed to create template');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -143,19 +105,26 @@ export default function FormTemplatesPage() {
     router.push(`/forms/templates/${templateId}/builder`);
   };
 
-  const handleDuplicateTemplate = (template: FormTemplate) => {
-    const duplicated: FormTemplate = {
-      ...template,
-      id: Date.now().toString(),
-      name: `${template.name} (Copy)`,
-      lastModified: new Date().toISOString().split("T")[0],
-      status: "draft",
-    };
-    setTemplates([...templates, duplicated]);
+  const handleDuplicateTemplate = async (template: FormTemplate) => {
+    try {
+      await formTemplatesApi.duplicate(template.id);
+      refetch();
+    } catch (error) {
+      console.error('Failed to duplicate template:', error);
+      alert('Failed to duplicate template');
+    }
   };
 
-  const handleDeleteTemplate = (templateId: string) => {
-    setTemplates(templates.filter((t) => t.id !== templateId));
+  const handleDeleteTemplate = async (templateId: string) => {
+    if (window.confirm('Are you sure you want to delete this template?')) {
+      try {
+        await formTemplatesApi.delete(templateId);
+        refetch();
+      } catch (error) {
+        console.error('Failed to delete template:', error);
+        alert('Failed to delete template');
+      }
+    }
   };
 
   return (
@@ -190,7 +159,7 @@ export default function FormTemplatesPage() {
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredTemplates.map((template) => (
+        {templates.map((template) => (
           <Card
             key={template.id}
             className="hover:shadow-md transition-shadow cursor-pointer"
@@ -213,7 +182,7 @@ export default function FormTemplatesPage() {
                       >
                         {template.category}
                       </Badge>
-                      {template.status === "draft" && (
+                      {template.status === "DRAFT" && (
                         <Badge variant="outline">Draft</Badge>
                       )}
                     </div>

@@ -552,3 +552,183 @@ export const notesApi = {
     });
   },
 };
+
+// Form Template types
+export interface FormTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'INTAKE' | 'ASSESSMENT' | 'CONSENT' | 'QUESTIONNAIRE' | 'CUSTOM';
+  status: 'ACTIVE' | 'DRAFT';
+  language: string;
+  isPublic: boolean;
+  questions: any[];
+  questionCount: number;
+  lastModified: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Form Templates API
+export const formTemplatesApi = {
+  getAll: async (params?: {
+    search?: string;
+    category?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<FormTemplate>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.category) searchParams.set('category', params.category);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<FormTemplate>>(`/form-templates${query ? `?${query}` : ''}`);
+  },
+
+  getById: async (id: string): Promise<FormTemplate> => {
+    return apiFetch<FormTemplate>(`/form-templates/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    description?: string;
+    category?: string;
+    status?: string;
+    language?: string;
+    isPublic?: boolean;
+    questions?: any[];
+  }): Promise<FormTemplate> => {
+    return apiFetch<FormTemplate>('/form-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<FormTemplate>): Promise<FormTemplate> => {
+    return apiFetch<FormTemplate>(`/form-templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  duplicate: async (id: string): Promise<FormTemplate> => {
+    return apiFetch<FormTemplate>(`/form-templates/${id}/duplicate`, {
+      method: 'POST',
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/form-templates/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Invoice types
+export interface InvoiceItem {
+  id: string;
+  description: string;
+  code?: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  patientId: string;
+  patientName: string;
+  issueDate: string;
+  dueDate: string;
+  amount: number;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  status: 'DRAFT' | 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+  paymentMethod?: string;
+  notes?: string;
+  items: InvoiceItem[];
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface BillingStats {
+  billedThisMonth: number;
+  collectedThisMonth: number;
+  outstandingBalance: number;
+}
+
+// Invoices API
+export const invoicesApi = {
+  getAll: async (params?: {
+    search?: string;
+    status?: string;
+    patientId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<Invoice>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.startDate) searchParams.set('startDate', params.startDate);
+    if (params?.endDate) searchParams.set('endDate', params.endDate);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<Invoice>>(`/invoices${query ? `?${query}` : ''}`);
+  },
+
+  getById: async (id: string): Promise<Invoice> => {
+    return apiFetch<Invoice>(`/invoices/${id}`);
+  },
+
+  getStats: async (): Promise<BillingStats> => {
+    return apiFetch<BillingStats>('/invoices/stats');
+  },
+
+  create: async (data: {
+    patientId: string;
+    appointmentId?: string;
+    invoiceNumber: string;
+    issueDate: string;
+    dueDate: string;
+    paymentMethod?: string;
+    notes?: string;
+    items: Array<{
+      description: string;
+      code?: string;
+      quantity: number;
+      unitPrice: number;
+    }>;
+    tax?: number;
+    discount?: number;
+  }): Promise<Invoice> => {
+    return apiFetch<Invoice>('/invoices', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<Invoice>): Promise<Invoice> => {
+    return apiFetch<Invoice>(`/invoices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/invoices/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};

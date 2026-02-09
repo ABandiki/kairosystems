@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { usePatients } from '@/hooks/use-api';
 import { useAuth } from '@/hooks/use-auth';
+import { invoicesApi } from '@/lib/api';
 import { format, addDays } from 'date-fns';
 
 interface InvoiceItem {
@@ -100,29 +101,29 @@ export default function NewInvoicePage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // In production, this would call an API to create the invoice
-      console.log('Creating invoice:', {
+      await invoicesApi.create({
         patientId,
-        appointmentId,
+        appointmentId: appointmentId === 'none' ? undefined : appointmentId,
         issueDate,
         dueDate,
         paymentMethod,
         invoiceNumber,
         notes,
-        items,
-        subtotal,
+        items: items.map(item => ({
+          description: item.description,
+          code: item.code,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
         tax,
         discount,
-        total,
       });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Navigate back to billing list
       router.push('/billing');
     } catch (error) {
       console.error('Error creating invoice:', error);
+      alert('Failed to create invoice');
     } finally {
       setIsSubmitting(false);
     }
