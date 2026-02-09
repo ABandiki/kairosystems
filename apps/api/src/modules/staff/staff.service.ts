@@ -74,20 +74,28 @@ export class StaffService {
     practiceId: string,
     data: {
       email: string;
-      password: string;
+      password?: string;
       firstName: string;
       lastName: string;
       role: UserRole;
       phone?: string;
       gmcNumber?: string;
       nmcNumber?: string;
+      isActive?: boolean;
     },
   ) {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    // Generate a temporary password if not provided
+    // In production, you would typically send a password reset email
+    const password = data.password || this.generateTempPassword();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const { password: _, ...restData } = data;
+
     return this.prisma.user.create({
       data: {
-        ...data,
+        ...restData,
         password: hashedPassword,
+        isActive: data.isActive ?? true,
         practice: { connect: { id: practiceId } },
       },
       select: {
@@ -102,6 +110,16 @@ export class StaffService {
         isActive: true,
       },
     });
+  }
+
+  private generateTempPassword(): string {
+    // Generate a random temporary password
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
   }
 
   async update(
