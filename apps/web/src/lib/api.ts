@@ -174,6 +174,7 @@ export class ApiError extends Error {
 
 // Token management
 let accessToken: string | null = null;
+let deviceFingerprint: string | null = null;
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
@@ -194,12 +195,28 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
+export function setDeviceFingerprint(fingerprint: string | null) {
+  deviceFingerprint = fingerprint;
+  if (typeof window !== 'undefined' && fingerprint) {
+    localStorage.setItem('device_fingerprint', fingerprint);
+  }
+}
+
+export function getDeviceFingerprint(): string | null {
+  if (deviceFingerprint) return deviceFingerprint;
+  if (typeof window !== 'undefined') {
+    deviceFingerprint = localStorage.getItem('device_fingerprint');
+  }
+  return deviceFingerprint;
+}
+
 // Base fetch function
 async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const token = getAccessToken();
+  const fingerprint = getDeviceFingerprint();
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -208,6 +225,11 @@ async function apiFetch<T>(
 
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Include device fingerprint for device verification
+  if (fingerprint) {
+    (headers as Record<string, string>)['X-Device-Fingerprint'] = fingerprint;
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -740,5 +762,136 @@ export const invoicesApi = {
     return apiFetch<void>(`/invoices/${id}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// Device types
+export interface Device {
+  id: string;
+  deviceFingerprint: string;
+  deviceName: string;
+  deviceType: string;
+  status: 'PENDING' | 'APPROVED' | 'REVOKED';
+  approvedAt?: string;
+  lastUsedAt?: string;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export interface DeviceCheckResult {
+  registered: boolean;
+  approved: boolean;
+  status?: string;
+  deviceId?: string;
+  deviceName?: string;
+  message: string;
+}
+
+// Devices API
+export const devicesApi = {
+  getAll: async (): Promise<Device[]> => {
+    return apiFetch<Device[]>('/devices');
+  },
+
+  approve: async (deviceId: string): Promise<Device> => {
+    return apiFetch<Device>(`/devices/${deviceId}/approve`, {
+      method: 'PUT',
+    });
+  },
+
+  revoke: async (deviceId: string, reason?: string): Promise<Device> => {
+    return apiFetch<Device>(`/devices/${deviceId}/revoke`, {
+      method: 'PUT',
+      body: JSON.stringify({ reason }),
+    });
+  },
+};
+
+// Onboarding types
+export interface PracticeRegistrationData {
+  practiceName: string;
+  practiceEmail: string;
+  practicePhone: string;
+  odsCode: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  county?: string;
+  postcode: string;
+  adminEmail: string;
+  adminPassword: string;
+  adminFirstName: string;
+  adminLastName: string;
+  deviceFingerprint: string;
+  deviceName: string;
+  deviceType: string;
+}
+
+export interface PracticeRegistrationResponse {
+  message: string;
+  token: string;
+  practice: {
+    id: string;
+    name: string;
+    email: string;
+    subscriptionTier: string;
+  };
+  user: User;
+  device: {
+    id: string;
+    deviceName: string;
+    status: string;
+  };
+}
+
+// Onboarding API
+export const onboardingApi = {
+  registerPractice: async (data: PracticeRegistrationData): Promise<PracticeRegistrationResponse> => {
+    const response = await apiFetch<PracticeRegistrationResponse>('/onboarding/register-practice', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    // Set the token from registration
+    setAccessToken(response.token);
+    return response;
+  },
+
+  requestDevice: async (data: {
+    practiceId: string;
+    deviceFingerprint: string;
+    deviceName: string;
+    deviceType: string;
+  }): Promise<{ status: string; message: string; device: Device }> => {
+    return apiFetch('/onboarding/request-device', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  checkDevice: async (practiceId: string, deviceFingerprint: string): Promise<DeviceCheckResult> => {
+    return apiFetch<DeviceCheckResult>(
+      `/onboarding/check-device?practiceId=${encodeURIComponent(practiceId)}&deviceFingerprint=${encodeURIComponent(deviceFingerprint)}`
+    );
+  },
+
+  lookupPractice: async (email: string): Promise<{ id: string; name: string; email: string; isActive: boolean }> => {
+    return apiFetch(`/onboarding/practice-lookup?email=${encodeURIComponent(email)}`);
+  },
+};
+
+// Staff usage stats type
+export interface StaffUsage {
+  currentCount: number;
+  maxIncluded: number;
+  extraCount: number;
+  subscriptionTier: string;
+  isAtLimit: boolean;
+  breakdown: Array<{ role: string; count: number }>;
+}
+
+// Staff API additions
+export const staffUsageApi = {
+  getUsage: async (): Promise<StaffUsage> => {
+    return apiFetch<StaffUsage>('/staff/usage');
   },
 };

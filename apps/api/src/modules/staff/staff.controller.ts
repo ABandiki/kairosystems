@@ -35,6 +35,12 @@ export class StaffController {
     return this.staffService.getClinicians(req.user.practiceId);
   }
 
+  @Get('usage')
+  @ApiOperation({ summary: 'Get staff usage statistics for billing' })
+  async getStaffUsage(@Req() req: AuthenticatedRequest) {
+    return this.staffService.getStaffUsage(req.user.practiceId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get staff member by ID' })
   async findById(@Req() req: AuthenticatedRequest, @Param('id') id: string) {

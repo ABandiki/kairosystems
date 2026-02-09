@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
-import { authApi, User, getAccessToken, setAccessToken } from '@/lib/api';
+import { authApi, User, getAccessToken, setAccessToken, setDeviceFingerprint } from '@/lib/api';
+import { initDeviceFingerprint } from '@/lib/device-fingerprint';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
@@ -51,8 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Initialize device fingerprint for device verification
+    const initFingerprint = async () => {
+      try {
+        const fingerprint = await initDeviceFingerprint();
+        setDeviceFingerprint(fingerprint);
+      } catch (e) {
+        console.error('Failed to initialize device fingerprint:', e);
+      }
+    };
+
     // Try to restore user from localStorage first for faster initial load
     if (typeof window !== 'undefined') {
+      initFingerprint();
+
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
         try {

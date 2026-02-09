@@ -9,6 +9,9 @@ import { PracticesModule } from './modules/practices/practices.module';
 import { NotesModule } from './modules/notes/notes.module';
 import { FormTemplatesModule } from './modules/form-templates/form-templates.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
+import { DevicesModule } from './modules/devices/devices.module';
+import { SuperAdminModule } from './modules/super-admin/super-admin.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
@@ -27,6 +30,9 @@ import { PrismaModule } from './prisma/prisma.module';
     NotesModule,
     FormTemplatesModule,
     InvoicesModule,
+    DevicesModule,
+    SuperAdminModule,
+    OnboardingModule,
   ],
 })
 export class AppModule {}

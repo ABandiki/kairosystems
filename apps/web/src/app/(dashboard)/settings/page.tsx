@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Clock, Users, Bell, AlertCircle, Plus } from 'lucide-react';
+import { Building2, Clock, Users, Bell, AlertCircle, Plus, Monitor, Shield, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,9 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { usePractice, useAppointmentTypes, useRooms, usePharmacies } from '@/hooks/use-api';
-import { practiceApi, Practice, Room, Pharmacy } from '@/lib/api';
+import { practiceApi, Practice, Room, Pharmacy, devicesApi, Device, staffUsageApi, StaffUsage } from '@/lib/api';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 interface OpeningHour {
   day: string;
@@ -77,6 +79,15 @@ export default function SettingsPage() {
   // Opening hours state
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>(openingHoursDefaults);
   const [savingHours, setSavingHours] = useState(false);
+
+  // Devices state
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
+  const [deviceActionLoading, setDeviceActionLoading] = useState<string | null>(null);
+
+  // Staff usage state
+  const [staffUsage, setStaffUsage] = useState<StaffUsage | null>(null);
+  const [staffUsageLoading, setStaffUsageLoading] = useState(false);
 
   // Dialogs
   const [showNewRoomDialog, setShowNewRoomDialog] = useState(false);
@@ -129,6 +140,71 @@ export default function SettingsPage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  // Load devices when tab is selected
+  useEffect(() => {
+    if (activeTab === 'devices' && user) {
+      loadDevices();
+    }
+  }, [activeTab, user]);
+
+  // Load staff usage when tab is selected
+  useEffect(() => {
+    if (activeTab === 'subscription' && user) {
+      loadStaffUsage();
+    }
+  }, [activeTab, user]);
+
+  const loadDevices = async () => {
+    setDevicesLoading(true);
+    try {
+      const data = await devicesApi.getAll();
+      setDevices(data);
+    } catch (err) {
+      console.error('Failed to load devices:', err);
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
+
+  const loadStaffUsage = async () => {
+    setStaffUsageLoading(true);
+    try {
+      const data = await staffUsageApi.getUsage();
+      setStaffUsage(data);
+    } catch (err) {
+      console.error('Failed to load staff usage:', err);
+    } finally {
+      setStaffUsageLoading(false);
+    }
+  };
+
+  const handleApproveDevice = async (deviceId: string) => {
+    setDeviceActionLoading(deviceId);
+    try {
+      await devicesApi.approve(deviceId);
+      await loadDevices();
+    } catch (err) {
+      console.error('Failed to approve device:', err);
+      alert('Failed to approve device');
+    } finally {
+      setDeviceActionLoading(null);
+    }
+  };
+
+  const handleRevokeDevice = async (deviceId: string) => {
+    if (!confirm('Are you sure you want to revoke access for this device?')) return;
+    setDeviceActionLoading(deviceId);
+    try {
+      await devicesApi.revoke(deviceId, 'Revoked by administrator');
+      await loadDevices();
+    } catch (err) {
+      console.error('Failed to revoke device:', err);
+      alert('Failed to revoke device');
+    } finally {
+      setDeviceActionLoading(null);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -331,6 +407,14 @@ export default function SettingsPage() {
           <TabsTrigger value="pharmacies" className="gap-2">
             <Building2 className="h-4 w-4" />
             Pharmacies
+          </TabsTrigger>
+          <TabsTrigger value="devices" className="gap-2">
+            <Monitor className="h-4 w-4" />
+            Devices
+          </TabsTrigger>
+          <TabsTrigger value="subscription" className="gap-2">
+            <Shield className="h-4 w-4" />
+            Subscription
           </TabsTrigger>
         </TabsList>
 
@@ -660,6 +744,307 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Devices */}
+        <TabsContent value="devices" className="mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Registered Devices</CardTitle>
+                  <CardDescription>
+                    Manage devices that can access your practice system. Only approved devices can log in.
+                  </CardDescription>
+                </div>
+                <Button variant="outline" onClick={loadDevices} disabled={devicesLoading}>
+                  {devicesLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {devicesLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              ) : devices.length === 0 ? (
+                <div className="text-center py-8">
+                  <Monitor className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No devices registered yet</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Devices will appear here when staff members log in from new machines
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Pending devices first */}
+                  {devices.filter(d => d.status === 'PENDING').length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-medium text-amber-600 mb-3 flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        Pending Approval ({devices.filter(d => d.status === 'PENDING').length})
+                      </h3>
+                      {devices.filter(d => d.status === 'PENDING').map((device) => (
+                        <div
+                          key={device.id}
+                          className="flex items-center justify-between py-4 px-4 border border-amber-200 bg-amber-50 rounded-lg mb-2"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Monitor className="h-8 w-8 text-amber-600" />
+                            <div>
+                              <p className="font-medium">{device.deviceName}</p>
+                              <p className="text-sm text-gray-500">{device.deviceType}</p>
+                              <p className="text-xs text-gray-400">
+                                Requested: {new Date(device.createdAt).toLocaleDateString()}
+                                {device.ipAddress && ` • IP: ${device.ipAddress}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleApproveDevice(device.id)}
+                              disabled={deviceActionLoading === device.id}
+                            >
+                              {deviceActionLoading === device.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Approve
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleRevokeDevice(device.id)}
+                              disabled={deviceActionLoading === device.id}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Approved devices */}
+                  {devices.filter(d => d.status === 'APPROVED').map((device) => (
+                    <div
+                      key={device.id}
+                      className="flex items-center justify-between py-4 border-b last:border-0"
+                    >
+                      <div className="flex items-center gap-4">
+                        <Monitor className="h-8 w-8 text-gray-400" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{device.deviceName}</p>
+                            <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                              Approved
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-500">{device.deviceType}</p>
+                          <p className="text-xs text-gray-400">
+                            Approved: {device.approvedAt ? new Date(device.approvedAt).toLocaleDateString() : 'N/A'}
+                            {device.lastUsedAt && ` • Last used: ${new Date(device.lastUsedAt).toLocaleDateString()}`}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleRevokeDevice(device.id)}
+                        disabled={deviceActionLoading === device.id}
+                      >
+                        {deviceActionLoading === device.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Revoke Access'
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+
+                  {/* Revoked devices */}
+                  {devices.filter(d => d.status === 'REVOKED').length > 0 && (
+                    <div className="mt-6 pt-4 border-t">
+                      <h3 className="text-sm font-medium text-gray-500 mb-3">
+                        Revoked Devices ({devices.filter(d => d.status === 'REVOKED').length})
+                      </h3>
+                      {devices.filter(d => d.status === 'REVOKED').map((device) => (
+                        <div
+                          key={device.id}
+                          className="flex items-center justify-between py-3 opacity-60"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Monitor className="h-6 w-6 text-gray-300" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-500">{device.deviceName}</p>
+                                <Badge variant="outline" className="text-red-600 border-red-200">
+                                  Revoked
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-400">{device.deviceType}</p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleApproveDevice(device.id)}
+                            disabled={deviceActionLoading === device.id}
+                          >
+                            Re-approve
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Subscription & Staff Limits */}
+        <TabsContent value="subscription" className="mt-6">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Plan</CardTitle>
+                <CardDescription>
+                  Your current plan and staff allocation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {staffUsageLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : staffUsage ? (
+                  <div className="space-y-6">
+                    {/* Current Plan */}
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg border border-teal-200">
+                      <div>
+                        <p className="text-sm text-gray-600">Current Plan</p>
+                        <p className="text-2xl font-bold text-teal-700">{staffUsage.subscriptionTier}</p>
+                      </div>
+                      <Button variant="outline">Upgrade Plan</Button>
+                    </div>
+
+                    {/* Staff Usage */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">Staff Usage</p>
+                        <p className="text-sm text-gray-600">
+                          {staffUsage.currentCount} / {staffUsage.maxIncluded} included
+                          {staffUsage.extraCount > 0 && (
+                            <span className="text-amber-600"> (+{staffUsage.extraCount} extra)</span>
+                          )}
+                        </p>
+                      </div>
+                      <Progress
+                        value={(staffUsage.currentCount / staffUsage.maxIncluded) * 100}
+                        className={`h-3 ${staffUsage.isAtLimit ? 'bg-red-100' : ''}`}
+                      />
+                      {staffUsage.isAtLimit && (
+                        <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          You&apos;ve reached your staff limit. Upgrade to add more staff.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Staff Breakdown */}
+                    <div>
+                      <p className="text-sm font-medium mb-3">Staff Breakdown</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {staffUsage.breakdown.map((item) => (
+                          <div
+                            key={item.role}
+                            className="p-3 bg-gray-50 rounded-lg text-center"
+                          >
+                            <p className="text-2xl font-bold text-gray-700">{item.count}</p>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {item.role.replace(/_/g, ' ')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Plan Features */}
+                    <div className="border-t pt-4">
+                      <p className="text-sm font-medium mb-3">Plan Features</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>{staffUsage.maxIncluded} staff members included</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Unlimited patients</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Device management</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>Appointment scheduling</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">Failed to load subscription details</p>
+                    <Button variant="outline" size="sm" className="mt-3" onClick={loadStaffUsage}>
+                      Try Again
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Extra Staff Billing Info */}
+            {staffUsage && staffUsage.extraCount > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Staff Charges</CardTitle>
+                  <CardDescription>
+                    You have staff members beyond your plan limit
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div>
+                      <p className="font-medium text-amber-800">
+                        {staffUsage.extraCount} additional staff member{staffUsage.extraCount > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-sm text-amber-600">
+                        Billed at $10/month per extra staff
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-amber-800">
+                        ${staffUsage.extraCount * 10}/mo
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 

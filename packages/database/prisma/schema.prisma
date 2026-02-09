@@ -105,6 +105,19 @@ enum PharmacyType {
   ONLINE
 }
 
+enum DeviceStatus {
+  PENDING      // Awaiting approval
+  APPROVED     // Active and can access
+  REVOKED      // Access removed
+}
+
+enum SubscriptionTier {
+  BASIC        // 3 staff included (GP, Nurse, Receptionist)
+  STANDARD     // 5 staff included
+  PREMIUM      // 10 staff included
+  ENTERPRISE   // Unlimited
+}
+
 // ==================== MODELS ====================
 
 // Practice - supports multi-tenancy
@@ -123,6 +136,13 @@ model Practice {
   county        String?
   postcode      String
   country       String   @default("United Kingdom")
+
+  // Subscription & Limits
+  subscriptionTier    SubscriptionTier @default(BASIC)
+  maxStaffIncluded    Int              @default(3)    // Staff included in plan
+  extraStaffCount     Int              @default(0)    // Additional paid staff slots
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
 
   // Settings
   isActive      Boolean  @default(true)
@@ -145,8 +165,90 @@ model Practice {
   formTemplates FormTemplate[]
   formSubmissions FormSubmission[]
   invoices      Invoice[]
+  devices       Device[]
 
   @@map("practices")
+}
+
+// Registered devices that can access the practice
+model Device {
+  id            String       @id @default(cuid())
+  practiceId    String
+
+  // Device identification
+  deviceFingerprint String   @unique  // Unique browser/machine fingerprint
+  deviceName    String                // Friendly name e.g., "Front Desk PC"
+  deviceType    String                // e.g., "Desktop", "Laptop", "Tablet"
+
+  // Security
+  status        DeviceStatus @default(PENDING)
+  approvedById  String?               // User who approved the device
+  approvedAt    DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+
+  // Tracking
+  lastUsedAt    DateTime?
+  lastUsedByUserId String?
+  ipAddress     String?
+  userAgent     String?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  practice      Practice     @relation(fields: [practiceId], references: [id])
+  approvedBy    User?        @relation("DeviceApprover", fields: [approvedById], references: [id])
+  lastUsedBy    User?        @relation("DeviceLastUser", fields: [lastUsedByUserId], references: [id])
+
+  @@index([practiceId])
+  @@index([deviceFingerprint])
+  @@map("devices")
+}
+
+// Super Admin users (your maintenance team) - separate from practice users
+model SuperAdmin {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  isActive      Boolean  @default(true)
+
+  // 2FA
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+
+  // Audit
+  lastLoginAt   DateTime?
+  lastLoginIp   String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Activity log
+  activityLogs  SuperAdminActivityLog[]
+
+  @@map("super_admins")
+}
+
+// Log all super admin actions for audit trail
+model SuperAdminActivityLog {
+  id            String   @id @default(cuid())
+  superAdminId  String
+
+  action        String   // e.g., "LOGIN", "VIEW_PRACTICE", "CREATE_PRACTICE", "MODIFY_DEVICE"
+  practiceId    String?  // Which practice was accessed (if applicable)
+  details       Json?    // Additional details
+  ipAddress     String?
+
+  createdAt     DateTime @default(now())
+
+  superAdmin    SuperAdmin @relation(fields: [superAdminId], references: [id])
+
+  @@index([superAdminId, createdAt])
+  @@index([practiceId, createdAt])
+  @@map("super_admin_activity_logs")
 }
 
 model OpeningHours {
@@ -227,6 +329,8 @@ model User {
   createdTemplates  FormTemplate[]  @relation("CreatedTemplates")
   submittedForms    FormSubmission[] @relation("SubmittedForms")
   createdInvoices   Invoice[]       @relation("CreatedInvoices")
+  approvedDevices   Device[]        @relation("DeviceApprover")
+  deviceLastUsedBy  Device[]        @relation("DeviceLastUser")
 
   @@map("users")
 }

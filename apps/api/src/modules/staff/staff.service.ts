@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '@prisma/client';
+import { UserRole, SubscriptionTier } from '@prisma/client';
 
 @Injectable()
 export class StaffService {
@@ -83,7 +83,13 @@ export class StaffService {
       nmcNumber?: string;
       isActive?: boolean;
     },
+    bypassLimitCheck = false, // For super admin use
   ) {
+    // Check staff limits before creating (unless bypassed by super admin)
+    if (!bypassLimitCheck) {
+      await this.checkStaffLimit(practiceId);
+    }
+
     // Generate a temporary password if not provided
     // In production, you would typically send a password reset email
     const password = data.password || this.generateTempPassword();
@@ -91,7 +97,7 @@ export class StaffService {
 
     const { password: _, ...restData } = data;
 
-    return this.prisma.user.create({
+    const newStaff = await this.prisma.user.create({
       data: {
         ...restData,
         password: hashedPassword,
@@ -110,6 +116,133 @@ export class StaffService {
         isActive: true,
       },
     });
+
+    // Update extra staff count if over limit
+    await this.updateExtraStaffCount(practiceId);
+
+    return newStaff;
+  }
+
+  /**
+   * Check if the practice has reached its staff limit
+   */
+  private async checkStaffLimit(practiceId: string): Promise<void> {
+    const practice = await this.prisma.practice.findUnique({
+      where: { id: practiceId },
+      select: {
+        subscriptionTier: true,
+        maxStaffIncluded: true,
+      },
+    });
+
+    if (!practice) {
+      throw new NotFoundException('Practice not found');
+    }
+
+    // Enterprise tier has unlimited staff
+    if (practice.subscriptionTier === SubscriptionTier.ENTERPRISE) {
+      return;
+    }
+
+    const currentStaffCount = await this.prisma.user.count({
+      where: { practiceId, isActive: true },
+    });
+
+    // Get max staff based on subscription tier
+    const maxStaff = this.getMaxStaffForTier(practice.subscriptionTier);
+
+    if (currentStaffCount >= maxStaff) {
+      throw new ForbiddenException(
+        `Staff limit reached. Your ${practice.subscriptionTier} plan includes ${practice.maxStaffIncluded} staff members. ` +
+        `You currently have ${currentStaffCount} active staff. Please upgrade your plan or contact support to add more staff.`
+      );
+    }
+  }
+
+  /**
+   * Get the maximum staff allowed for a subscription tier
+   */
+  private getMaxStaffForTier(tier: SubscriptionTier): number {
+    switch (tier) {
+      case SubscriptionTier.BASIC:
+        return 3; // GP, Nurse, Receptionist
+      case SubscriptionTier.STANDARD:
+        return 5;
+      case SubscriptionTier.PREMIUM:
+        return 10;
+      case SubscriptionTier.ENTERPRISE:
+        return Infinity;
+      default:
+        return 3;
+    }
+  }
+
+  /**
+   * Update the extra staff count for billing purposes
+   */
+  private async updateExtraStaffCount(practiceId: string): Promise<void> {
+    const practice = await this.prisma.practice.findUnique({
+      where: { id: practiceId },
+      select: {
+        subscriptionTier: true,
+        maxStaffIncluded: true,
+      },
+    });
+
+    if (!practice || practice.subscriptionTier === SubscriptionTier.ENTERPRISE) {
+      return;
+    }
+
+    const currentStaffCount = await this.prisma.user.count({
+      where: { practiceId, isActive: true },
+    });
+
+    const extraStaff = Math.max(0, currentStaffCount - practice.maxStaffIncluded);
+
+    await this.prisma.practice.update({
+      where: { id: practiceId },
+      data: { extraStaffCount: extraStaff },
+    });
+  }
+
+  /**
+   * Get staff usage statistics for a practice
+   */
+  async getStaffUsage(practiceId: string) {
+    const practice = await this.prisma.practice.findUnique({
+      where: { id: practiceId },
+      select: {
+        subscriptionTier: true,
+        maxStaffIncluded: true,
+        extraStaffCount: true,
+      },
+    });
+
+    if (!practice) {
+      throw new NotFoundException('Practice not found');
+    }
+
+    const currentStaffCount = await this.prisma.user.count({
+      where: { practiceId, isActive: true },
+    });
+
+    const staffByRole = await this.prisma.user.groupBy({
+      by: ['role'],
+      where: { practiceId, isActive: true },
+      _count: true,
+    });
+
+    return {
+      currentCount: currentStaffCount,
+      maxIncluded: practice.maxStaffIncluded,
+      extraCount: practice.extraStaffCount,
+      subscriptionTier: practice.subscriptionTier,
+      isAtLimit: currentStaffCount >= this.getMaxStaffForTier(practice.subscriptionTier),
+      breakdown: staffByRole.map(item => ({
+        role: item.role,
+        count: item._count,
+      })),
+    };
   }
 
   private generateTempPassword(): string {
