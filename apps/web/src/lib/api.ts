@@ -504,6 +504,26 @@ export const practiceApi = {
   getAppointmentTypes: async (): Promise<AppointmentTypeSetting[]> => {
     return apiFetch<AppointmentTypeSetting[]>('/practices/current/appointment-types');
   },
+
+  createAppointmentType: async (data: {
+    type: string;
+    label: string;
+    code: string;
+    defaultDuration: number;
+    color: string;
+  }): Promise<AppointmentTypeSetting> => {
+    return apiFetch<AppointmentTypeSetting>('/practices/current/appointment-types', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateAppointmentType: async (id: string, data: Partial<AppointmentTypeSetting>): Promise<void> => {
+    return apiFetch<void>(`/practices/current/appointment-types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 // Note type

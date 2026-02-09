@@ -29,16 +29,16 @@ export class StaffController {
     return this.staffService.findAll(req.user.practiceId, { role });
   }
 
-  @Get('clinicians')
-  @ApiOperation({ summary: 'Get all clinicians (GPs, Nurses, HCAs)' })
-  async getClinicians(@Req() req: AuthenticatedRequest) {
-    return this.staffService.getClinicians(req.user.practiceId);
-  }
-
   @Get('usage')
   @ApiOperation({ summary: 'Get staff usage statistics for billing' })
   async getStaffUsage(@Req() req: AuthenticatedRequest) {
     return this.staffService.getStaffUsage(req.user.practiceId);
+  }
+
+  @Get('clinicians')
+  @ApiOperation({ summary: 'Get all clinicians (GPs, Nurses, HCAs)' })
+  async getClinicians(@Req() req: AuthenticatedRequest) {
+    return this.staffService.getClinicians(req.user.practiceId);
   }
 
   @Get(':id')

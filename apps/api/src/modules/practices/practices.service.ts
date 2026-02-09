@@ -124,8 +124,34 @@ export class PracticesService {
 
   async getAppointmentTypes(practiceId: string) {
     return this.prisma.appointmentTypeSetting.findMany({
-      where: { practiceId, isActive: true },
+      where: { practiceId },
       orderBy: { label: 'asc' },
+    });
+  }
+
+  async createAppointmentType(
+    practiceId: string,
+    data: {
+      type: string;
+      label: string;
+      code: string;
+      defaultDuration: number;
+      color: string;
+    },
+  ) {
+    // Type must be a valid AppointmentType enum value
+    // Cast it since frontend may send string
+    return this.prisma.appointmentTypeSetting.create({
+      data: {
+        practiceId,
+        type: data.type as any, // Cast to allow any type value
+        label: data.label,
+        code: data.code,
+        defaultDuration: data.defaultDuration,
+        color: data.color,
+        isActive: true,
+        allowedRoles: ['GP', 'NURSE', 'HCA'],
+      },
     });
   }
 

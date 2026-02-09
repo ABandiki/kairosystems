@@ -165,33 +165,42 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg border p-4">
             <h3 className="font-semibold text-gray-900 mb-4">Pending Tasks</h3>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="w-2 h-2 bg-amber-500 rounded-full" />
+              <button
+                className="w-full flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200 hover:bg-amber-100 transition-colors text-left cursor-pointer"
+                onClick={() => router.push('/patients')}
+              >
+                <div className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
                     5 test results to review
                   </p>
                   <p className="text-xs text-gray-500">Blood tests from lab</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-lg border border-teal-200">
-                <div className="w-2 h-2 bg-teal-500 rounded-full" />
+              </button>
+              <button
+                className="w-full flex items-center gap-3 p-3 bg-teal-50 rounded-lg border border-teal-200 hover:bg-teal-100 transition-colors text-left cursor-pointer"
+                onClick={() => router.push('/notes')}
+              >
+                <div className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
                     3 documents to sign
                   </p>
                   <p className="text-xs text-gray-500">Referral letters</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="w-2 h-2 bg-gray-500 rounded-full" />
+              </button>
+              <button
+                className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors text-left cursor-pointer"
+                onClick={() => router.push('/billing')}
+              >
+                <div className="w-2 h-2 bg-gray-500 rounded-full flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
                     12 repeat prescriptions
                   </p>
                   <p className="text-xs text-gray-500">Awaiting approval</p>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>

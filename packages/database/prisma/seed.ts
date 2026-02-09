@@ -490,12 +490,31 @@ async function main() {
 
   console.log('✅ Created appointment type settings');
 
+  // Create Super Admin (using base64 for demo, service supports both bcrypt and base64)
+  const superAdminPassword = await hashPassword('SuperAdmin123!');
+
+  await prisma.superAdmin.upsert({
+    where: { email: 'superadmin@kairo.com' },
+    update: {},
+    create: {
+      email: 'superadmin@kairo.com',
+      password: superAdminPassword,
+      firstName: 'System',
+      lastName: 'Administrator',
+      isActive: true,
+    },
+  });
+
+  console.log('✅ Created super admin');
+
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📋 Login credentials:');
   console.log('   Admin: admin@avondale-medical.co.zw / Password123!');
   console.log('   GP: dr.chikwanha@avondale-medical.co.zw / Password123!');
   console.log('   Nurse: nurse.mutasa@avondale-medical.co.zw / Password123!');
   console.log('   Reception: reception@avondale-medical.co.zw / Password123!');
+  console.log('\n📋 Super Admin credentials:');
+  console.log('   Super Admin: superadmin@kairo.com / SuperAdmin123!');
 }
 
 main()

@@ -71,6 +71,12 @@ export class PracticesController {
     return this.practicesService.getAppointmentTypes(req.user.practiceId);
   }
 
+  @Post('current/appointment-types')
+  @ApiOperation({ summary: 'Create appointment type settings' })
+  async createAppointmentType(@Req() req: AuthenticatedRequest, @Body() data: any) {
+    return this.practicesService.createAppointmentType(req.user.practiceId, data);
+  }
+
   @Put('current/appointment-types/:id')
   @ApiOperation({ summary: 'Update appointment type settings' })
   async updateAppointmentType(

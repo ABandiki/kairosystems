@@ -136,6 +136,8 @@ export default function PatientDetailPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewNoteDialog, setShowNewNoteDialog] = useState(false);
   const [showNewAlertDialog, setShowNewAlertDialog] = useState(false);
+  const [showUploadDocumentDialog, setShowUploadDocumentDialog] = useState(false);
+  const [showPrescriptionDialog, setShowPrescriptionDialog] = useState(false);
   const [newNote, setNewNote] = useState({
     title: '',
     content: '',
@@ -146,6 +148,13 @@ export default function PatientDetailPage() {
     type: 'MEDICAL',
     severity: 'MEDIUM',
     description: '',
+  });
+  const [newPrescription, setNewPrescription] = useState({
+    medication: '',
+    dosage: '',
+    frequency: '',
+    duration: '',
+    notes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -672,7 +681,7 @@ export default function PatientDetailPage() {
           <div className="bg-white rounded-lg border p-8 text-center">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No documents uploaded for this patient</p>
-            <Button className="mt-4" variant="outline">
+            <Button className="mt-4" variant="outline" onClick={() => setShowUploadDocumentDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Upload Document
             </Button>
@@ -684,7 +693,7 @@ export default function PatientDetailPage() {
           <div className="bg-white rounded-lg border p-8 text-center">
             <Pill className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No prescriptions recorded for this patient</p>
-            <Button className="mt-4" variant="outline">
+            <Button className="mt-4" variant="outline" onClick={() => setShowPrescriptionDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Prescription
             </Button>
@@ -841,6 +850,163 @@ export default function PatientDetailPage() {
               disabled={isSubmitting || !newAlert.description}
             >
               {isSubmitting ? 'Adding...' : 'Add Alert'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Document Dialog */}
+      <Dialog open={showUploadDocumentDialog} onOpenChange={setShowUploadDocumentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Document</DialogTitle>
+            <DialogDescription>
+              Upload a document for {patient?.firstName} {patient?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="docType">Document Type</Label>
+              <Select defaultValue="LAB_RESULT">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LAB_RESULT">Lab Result</SelectItem>
+                  <SelectItem value="REFERRAL">Referral Letter</SelectItem>
+                  <SelectItem value="SCAN">Scan/Imaging</SelectItem>
+                  <SelectItem value="CONSENT">Consent Form</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="docTitle">Document Title</Label>
+              <Input id="docTitle" placeholder="e.g., Blood Test Results - Feb 2026" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="docFile">File</Label>
+              <Input id="docFile" type="file" accept=".pdf,.doc,.docx,.jpg,.png" />
+              <p className="text-xs text-gray-500">Accepted formats: PDF, DOC, DOCX, JPG, PNG (max 10MB)</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="docNotes">Notes (optional)</Label>
+              <Textarea id="docNotes" placeholder="Additional notes about this document..." rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUploadDocumentDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              alert('Document upload feature coming soon! This will integrate with secure file storage.');
+              setShowUploadDocumentDialog(false);
+            }}>
+              Upload Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Prescription Dialog */}
+      <Dialog open={showPrescriptionDialog} onOpenChange={setShowPrescriptionDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Prescription</DialogTitle>
+            <DialogDescription>
+              Create a new prescription for {patient?.firstName} {patient?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="medication">Medication *</Label>
+                <Input
+                  id="medication"
+                  placeholder="e.g., Amoxicillin 500mg"
+                  value={newPrescription.medication}
+                  onChange={(e) => setNewPrescription({...newPrescription, medication: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dosage">Dosage *</Label>
+                <Input
+                  id="dosage"
+                  placeholder="e.g., 1 capsule"
+                  value={newPrescription.dosage}
+                  onChange={(e) => setNewPrescription({...newPrescription, dosage: e.target.value})}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequency *</Label>
+                <Select
+                  value={newPrescription.frequency}
+                  onValueChange={(value) => setNewPrescription({...newPrescription, frequency: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="once_daily">Once daily</SelectItem>
+                    <SelectItem value="twice_daily">Twice daily</SelectItem>
+                    <SelectItem value="three_times_daily">Three times daily</SelectItem>
+                    <SelectItem value="four_times_daily">Four times daily</SelectItem>
+                    <SelectItem value="as_needed">As needed (PRN)</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration *</Label>
+                <Select
+                  value={newPrescription.duration}
+                  onValueChange={(value) => setNewPrescription({...newPrescription, duration: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3_days">3 days</SelectItem>
+                    <SelectItem value="5_days">5 days</SelectItem>
+                    <SelectItem value="7_days">7 days</SelectItem>
+                    <SelectItem value="14_days">14 days</SelectItem>
+                    <SelectItem value="28_days">28 days</SelectItem>
+                    <SelectItem value="3_months">3 months</SelectItem>
+                    <SelectItem value="ongoing">Ongoing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prescNotes">Instructions / Notes</Label>
+              <Textarea
+                id="prescNotes"
+                placeholder="e.g., Take with food. Complete the full course."
+                rows={2}
+                value={newPrescription.notes}
+                onChange={(e) => setNewPrescription({...newPrescription, notes: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPrescriptionDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!newPrescription.medication || !newPrescription.dosage || !newPrescription.frequency || !newPrescription.duration) {
+                  alert('Please fill in all required fields');
+                  return;
+                }
+                alert('Prescription created! (Integration with EPS/pharmacy system coming soon)');
+                setNewPrescription({ medication: '', dosage: '', frequency: '', duration: '', notes: '' });
+                setShowPrescriptionDialog(false);
+              }}
+              disabled={!newPrescription.medication || !newPrescription.dosage}
+            >
+              Create Prescription
             </Button>
           </DialogFooter>
         </DialogContent>

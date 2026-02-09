@@ -315,28 +315,48 @@ export default function SettingsPage() {
   };
 
   const handleSaveNewAppType = async () => {
+    if (!newAppType.type || !newAppType.label || !newAppType.code) {
+      alert('Please fill in all required fields');
+      return;
+    }
     try {
-      // In a real app, this would save to the backend
-      // await practiceApi.createAppointmentType(newAppType);
-      alert('Appointment type creation would save to backend. Feature coming soon!');
+      await practiceApi.createAppointmentType({
+        type: newAppType.type,
+        label: newAppType.label,
+        code: newAppType.code,
+        defaultDuration: newAppType.defaultDuration,
+        color: newAppType.color,
+      });
       setShowNewAppTypeDialog(false);
+      setNewAppType({
+        type: '',
+        label: '',
+        code: '',
+        defaultDuration: 15,
+        color: '#03989E',
+      });
       refetchTypes();
     } catch (err) {
       console.error('Failed to create appointment type:', err);
+      alert('Failed to create appointment type');
     }
   };
 
   const handleUpdateAppType = async () => {
     if (!selectedAppType) return;
     try {
-      // In a real app, this would update the backend
-      // await practiceApi.updateAppointmentType(selectedAppType.id, selectedAppType);
-      alert('Appointment type update would save to backend. Feature coming soon!');
+      await practiceApi.updateAppointmentType(selectedAppType.id, {
+        label: selectedAppType.label,
+        defaultDuration: selectedAppType.defaultDuration,
+        color: selectedAppType.color,
+        isActive: selectedAppType.isActive,
+      });
       setShowEditAppTypeDialog(false);
       setSelectedAppType(null);
       refetchTypes();
     } catch (err) {
       console.error('Failed to update appointment type:', err);
+      alert('Failed to update appointment type');
     }
   };
 
@@ -1179,7 +1199,12 @@ export default function SettingsPage() {
                 id="apptype-label"
                 placeholder="e.g., Standard Consultation"
                 value={newAppType.label}
-                onChange={(e) => setNewAppType({ ...newAppType, label: e.target.value })}
+                onChange={(e) => {
+                  const label = e.target.value;
+                  // Auto-generate type from label (e.g., "Standard Consultation" -> "STANDARD_CONSULTATION")
+                  const type = label.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+                  setNewAppType({ ...newAppType, label, type });
+                }}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -1187,9 +1212,9 @@ export default function SettingsPage() {
                 <Label htmlFor="apptype-code">Code *</Label>
                 <Input
                   id="apptype-code"
-                  placeholder="e.g., STD_CONSULT"
+                  placeholder="e.g., STD"
                   value={newAppType.code}
-                  onChange={(e) => setNewAppType({ ...newAppType, code: e.target.value })}
+                  onChange={(e) => setNewAppType({ ...newAppType, code: e.target.value.toUpperCase() })}
                 />
               </div>
               <div className="space-y-2">
