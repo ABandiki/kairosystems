@@ -46,6 +46,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
@@ -176,6 +180,21 @@ export default function BillingPage() {
         alert('Failed to delete invoice');
       }
     }
+  };
+
+  const handleStatusChange = async (invoiceId: string, newStatus: string) => {
+    try {
+      await invoicesApi.update(invoiceId, { status: newStatus as any });
+      refetch();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update invoice status');
+    }
+  };
+
+  const handlePrintInvoice = (invoiceId: string) => {
+    // Navigate to invoice view page which has proper print functionality
+    router.push(`/billing/${invoiceId}?print=true`);
   };
 
   return (
@@ -512,7 +531,7 @@ export default function BillingPage() {
                             <FileText className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handlePrintInvoice(invoice.id)}>
                             <Printer className="h-4 w-4 mr-2" />
                             Print
                           </DropdownMenuItem>
@@ -520,6 +539,37 @@ export default function BillingPage() {
                             <Send className="h-4 w-4 mr-2" />
                             Send to Patient
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Change Status
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'DRAFT')}>
+                                  <span className="w-2 h-2 rounded-full bg-gray-400 mr-2" />
+                                  Draft
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'PENDING')}>
+                                  <span className="w-2 h-2 rounded-full bg-yellow-400 mr-2" />
+                                  Pending
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'PAID')}>
+                                  <span className="w-2 h-2 rounded-full bg-green-400 mr-2" />
+                                  Paid
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'OVERDUE')}>
+                                  <span className="w-2 h-2 rounded-full bg-red-400 mr-2" />
+                                  Overdue
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, 'CANCELLED')}>
+                                  <span className="w-2 h-2 rounded-full bg-gray-300 mr-2" />
+                                  Cancelled
+                                </DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteInvoice(invoice.id)}>
                             <Trash2 className="h-4 w-4 mr-2" />

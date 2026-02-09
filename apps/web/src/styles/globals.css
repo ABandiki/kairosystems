@@ -145,3 +145,109 @@
 .status-cancelled {
   @apply bg-gray-100 text-gray-800;
 }
+
+/* Print styles - hide everything except printable content */
+@media print {
+  /* Hide navigation, sidebar, and header */
+  nav,
+  aside,
+  header,
+  [data-sidebar],
+  .sidebar,
+  [class*="sidebar"],
+  [class*="Sidebar"],
+  button:not(.print-show),
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset body and main styles */
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Make main content full width */
+  main,
+  [role="main"],
+  .main-content {
+    margin: 0 !important;
+    padding: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Show printable content full width */
+  .print-content {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Invoice specific print styles */
+  .invoice-print {
+    padding: 20px;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  .invoice-print .invoice-header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #03989E;
+    padding-bottom: 20px;
+  }
+
+  .invoice-print .invoice-header h1 {
+    font-size: 24pt;
+    color: #03989E;
+    margin: 0;
+  }
+
+  .invoice-print table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+
+  .invoice-print th,
+  .invoice-print td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+  }
+
+  .invoice-print th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+  }
+
+  /* Hide actions column in print */
+  .invoice-print .actions-column {
+    display: none !important;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .avoid-page-break {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure cards don't have shadows in print */
+  .card,
+  [class*="card"],
+  [class*="Card"] {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
