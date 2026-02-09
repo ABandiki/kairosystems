@@ -656,6 +656,16 @@ export interface Invoice {
   items: InvoiceItem[];
   createdBy: string;
   createdAt: string;
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    addressLine1?: string;
+    city?: string;
+    postcode?: string;
+  };
 }
 
 export interface BillingStats {
