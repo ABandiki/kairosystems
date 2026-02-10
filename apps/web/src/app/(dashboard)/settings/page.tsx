@@ -96,6 +96,7 @@ export default function SettingsPage() {
   const [showEditAppTypeDialog, setShowEditAppTypeDialog] = useState(false);
   const [showEditRoomDialog, setShowEditRoomDialog] = useState(false);
   const [showEditPharmacyDialog, setShowEditPharmacyDialog] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   // Selected items for editing
   const [selectedAppType, setSelectedAppType] = useState<any>(null);
@@ -957,7 +958,7 @@ export default function SettingsPage() {
                         <p className="text-sm text-gray-600">Current Plan</p>
                         <p className="text-2xl font-bold text-teal-700">{staffUsage.subscriptionTier}</p>
                       </div>
-                      <Button variant="outline">Upgrade Plan</Button>
+                      <Button variant="outline" onClick={() => setShowUpgradeDialog(true)}>Upgrade Plan</Button>
                     </div>
 
                     {/* Staff Usage */}
@@ -1445,6 +1446,37 @@ export default function SettingsPage() {
               disabled={!selectedPharmacy?.name || !selectedPharmacy?.addressLine1 || !selectedPharmacy?.city || !selectedPharmacy?.postcode}
             >
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Plan Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upgrade Your Plan</DialogTitle>
+            <DialogDescription>
+              To upgrade your subscription plan, please contact your administrator.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center">
+                <Shield className="h-8 w-8 text-teal-600" />
+              </div>
+            </div>
+            <p className="text-center text-gray-600 mb-4">
+              Plan upgrades are managed by your system administrator. Please reach out to them to discuss your needs and upgrade options.
+            </p>
+            <div className="bg-gray-50 rounded-lg p-4 text-center">
+              <p className="text-sm text-gray-500 mb-1">Contact Support</p>
+              <p className="font-medium text-teal-600">support@kairo.health</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowUpgradeDialog(false)}>
+              Got it
             </Button>
           </DialogFooter>
         </DialogContent>
