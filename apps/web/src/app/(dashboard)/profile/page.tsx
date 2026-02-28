@@ -25,6 +25,9 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { staffApi } from '@/lib/api';
+import { useToast } from '@/components/ui/toast';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 const roleLabels: Record<string, string> = {
   GP_PARTNER: 'GP Partner',
@@ -33,6 +36,8 @@ const roleLabels: Record<string, string> = {
   GP: 'GP',
   PRACTICE_NURSE: 'Practice Nurse',
   HEALTHCARE_ASSISTANT: 'Healthcare Assistant',
+  NURSE: 'Nurse',
+  HCA: 'HCA',
   RECEPTIONIST: 'Receptionist',
   PRACTICE_MANAGER: 'Practice Manager',
   PRACTICE_ADMIN: 'Practice Admin',
@@ -43,6 +48,7 @@ const roleLabels: Record<string, string> = {
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isLoading: authLoading, logout, refreshUser } = useAuth();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit mode state
@@ -55,12 +61,13 @@ export default function ProfilePage() {
 
   // Dialog states
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [show2FADialog, setShow2FADialog] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -84,8 +91,7 @@ export default function ProfilePage() {
   const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // For now, just show an alert - file upload would require backend support
-      alert('Photo upload feature is coming soon! Please contact your administrator to update your photo.');
+      toast.info('Coming Soon', 'Photo upload feature is coming soon.');
     }
   };
 
@@ -112,40 +118,65 @@ export default function ProfilePage() {
       if (refreshUser) {
         await refreshUser();
       }
-      alert('Profile updated successfully!');
+      toast.success('Profile Updated', 'Your profile has been updated successfully.');
     } catch (err) {
       console.error('Failed to update profile:', err);
-      alert('Failed to update profile. Please try again.');
+      toast.error('Update Failed', 'Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleChangePassword = () => {
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordError('');
     setShowPasswordDialog(true);
   };
 
   const handleSubmitPassword = async () => {
+    setPasswordError('');
+
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setPasswordError('Please fill in all fields.');
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('New passwords do not match!');
+      setPasswordError('New passwords do not match.');
       return;
     }
     if (passwordForm.newPassword.length < 8) {
-      alert('Password must be at least 8 characters long.');
+      setPasswordError('Password must be at least 8 characters long.');
       return;
     }
-    // Password change would require backend API support
-    alert('Password change feature is coming soon! Please contact your administrator.');
-    setShowPasswordDialog(false);
-  };
 
-  const handleEnable2FA = () => {
-    setShow2FADialog(true);
+    setPasswordLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to change password');
+      }
+
+      setShowPasswordDialog(false);
+      toast.success('Password Changed', 'Your password has been updated successfully.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to change password';
+      setPasswordError(message);
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   if (authLoading) {
@@ -284,7 +315,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between py-4 border-b">
               <div>
                 <p className="font-medium">Password</p>
-                <p className="text-sm text-gray-500">Last changed: Never</p>
+                <p className="text-sm text-gray-500">Change your account password</p>
               </div>
               <Button variant="outline" onClick={handleChangePassword}>Change Password</Button>
             </div>
@@ -293,7 +324,9 @@ export default function ProfilePage() {
                 <p className="font-medium">Two-Factor Authentication</p>
                 <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
               </div>
-              <Button variant="outline" onClick={handleEnable2FA}>Enable 2FA</Button>
+              <Button variant="outline" onClick={() => toast.info('Coming Soon', '2FA will be available in a future update.')}>
+                Enable 2FA
+              </Button>
             </div>
             <div className="flex items-center justify-between py-4">
               <div>
@@ -316,6 +349,11 @@ export default function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            {passwordError && (
+              <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
+                <span>{passwordError}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Current Password</Label>
               <Input
@@ -333,6 +371,7 @@ export default function ProfilePage() {
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               />
+              <p className="text-xs text-gray-500">Must be at least 8 characters</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>
@@ -348,35 +387,8 @@ export default function ProfilePage() {
             <Button variant="outline" onClick={() => setShowPasswordDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitPassword}>
-              Change Password
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 2FA Dialog */}
-      <Dialog open={show2FADialog} onOpenChange={setShow2FADialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Two-Factor Authentication</DialogTitle>
-            <DialogDescription>
-              Enable two-factor authentication for enhanced security.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-500">
-                This feature is coming soon. Please contact your practice administrator for more information about enabling 2FA on your account.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShow2FADialog(false)}>
-              Close
+            <Button onClick={handleSubmitPassword} disabled={passwordLoading}>
+              {passwordLoading ? 'Changing...' : 'Change Password'}
             </Button>
           </DialogFooter>
         </DialogContent>

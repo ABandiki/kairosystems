@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, User, Settings, LogOut, Calendar, AlertTriangle, UserPlus, Clock, Check, X } from 'lucide-react';
+import { Bell, Search, User, Settings, LogOut, Calendar, AlertTriangle, UserPlus, Clock, Check, X, MessageSquare, FileText, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,60 +20,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/use-auth';
+import { useNotifications, useUnreadNotificationCount } from '@/hooks/use-api';
+import { notificationsApi, AppNotification } from '@/lib/api';
 import { cn } from '@/lib/utils';
-
-interface Notification {
-  id: string;
-  type: 'appointment' | 'alert' | 'patient' | 'reminder';
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
-
-// Sample notifications - in a real app these would come from an API
-const sampleNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'appointment',
-    title: 'Upcoming Appointment',
-    message: 'John Smith has an appointment in 15 minutes',
-    time: '2 min ago',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'alert',
-    title: 'Patient Alert',
-    message: 'Emma Wilson has a drug allergy flag',
-    time: '10 min ago',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'patient',
-    title: 'New Patient Registration',
-    message: 'Sarah Brown has registered at the practice',
-    time: '1 hour ago',
-    read: false,
-  },
-  {
-    id: '4',
-    type: 'reminder',
-    title: 'Task Reminder',
-    message: 'Review lab results for Michael Johnson',
-    time: '2 hours ago',
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'appointment',
-    title: 'Appointment Cancelled',
-    message: 'David Lee cancelled their 3:00 PM appointment',
-    time: '3 hours ago',
-    read: true,
-  },
-];
 
 interface HeaderProps {
   title?: string;
@@ -83,36 +32,86 @@ export function Header({ title }: HeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState<Notification[]>(sampleNotifications);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Real notifications from API
+  const { data: notificationsData, refetch: refetchNotifications } = useNotifications({ pageSize: 10 }, !!user);
+  const { data: unreadData, refetch: refetchUnreadCount } = useUnreadNotificationCount(!!user);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
+  const notifications: AppNotification[] = notificationsData?.data || [];
+  const unreadCount = unreadData?.count || 0;
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
+  // Poll for unread count every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      refetchUnreadCount();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [user, refetchUnreadCount]);
 
-  const dismissNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  const getNotificationIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'appointment':
-        return <Calendar className="h-4 w-4 text-teal-500" />;
-      case 'alert':
-        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-      case 'patient':
-        return <UserPlus className="h-4 w-4 text-green-500" />;
-      case 'reminder':
-        return <Clock className="h-4 w-4 text-purple-500" />;
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      refetchNotifications();
+      refetchUnreadCount();
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
     }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      refetchNotifications();
+      refetchUnreadCount();
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const dismissNotification = async (id: string) => {
+    try {
+      await notificationsApi.dismiss(id);
+      refetchNotifications();
+      refetchUnreadCount();
+    } catch (err) {
+      console.error('Failed to dismiss notification:', err);
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'APPOINTMENT_BOOKED':
+      case 'APPOINTMENT_REMINDER':
+      case 'APPOINTMENT_RESCHEDULED':
+        return <Calendar className="h-4 w-4 text-teal-500" />;
+      case 'APPOINTMENT_CANCELLED':
+        return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+      case 'MESSAGE_FROM_PRACTICE':
+        return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      case 'INVOICE_SENT':
+        return <FileText className="h-4 w-4 text-green-500" />;
+      case 'SYSTEM':
+        return <Info className="h-4 w-4 text-purple-500" />;
+      default:
+        return <Bell className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -207,9 +206,9 @@ export function Header({ title }: HeaderProps) {
                     key={notification.id}
                     className={cn(
                       'p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors',
-                      !notification.read && 'bg-teal-50/50'
+                      !notification.isRead && 'bg-teal-50/50'
                     )}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => !notification.isRead && markAsRead(notification.id)}
                   >
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5">
@@ -219,7 +218,7 @@ export function Header({ title }: HeaderProps) {
                         <div className="flex items-start justify-between gap-2">
                           <p className={cn(
                             'text-sm',
-                            !notification.read && 'font-semibold'
+                            !notification.isRead && 'font-semibold'
                           )}>
                             {notification.title}
                           </p>
@@ -239,7 +238,7 @@ export function Header({ title }: HeaderProps) {
                           {notification.message}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                          {notification.time}
+                          {formatTime(notification.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -255,7 +254,6 @@ export function Header({ title }: HeaderProps) {
                   className="w-full"
                   onClick={() => {
                     setNotificationsOpen(false);
-                    // Could navigate to a dedicated notifications page
                   }}
                 >
                   View All Notifications

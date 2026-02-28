@@ -6,13 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, Stethoscope } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { TrialExpiredScreen } from '@/components/trial-expired';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [trialExpired, setTrialExpired] = useState(false);
+
+  if (trialExpired) {
+    return <TrialExpiredScreen />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +33,12 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      const message = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      if (message.includes('TRIAL_EXPIRED')) {
+        setTrialExpired(true);
+      } else {
+        setError(message);
+      }
     }
   };
 
@@ -35,9 +47,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#03989E] rounded-xl mb-4">
-            <Stethoscope className="w-8 h-8 text-white" />
-          </div>
+          <Link href="/" className="inline-block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.svg" alt="Kairo" className="w-16 h-16 mx-auto mb-4 rounded-xl hover:opacity-80 transition-opacity cursor-pointer" />
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900">Kairo</h1>
           <p className="text-gray-600">GP Practice Management System</p>
         </div>
@@ -76,7 +89,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   <a
-                    href="#"
+                    href="/forgot-password"
                     className="text-sm text-[#03989E] hover:text-[#027A7F]"
                   >
                     Forgot password?
@@ -103,40 +116,11 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-
-            {/* Demo credentials */}
-            <div className="mt-6 pt-6 border-t">
-              <p className="text-sm text-gray-500 text-center mb-3">
-                Demo Credentials
-              </p>
-              <div className="space-y-2 text-xs text-gray-600">
-                <div className="flex justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium">Admin:</span>
-                  <span className="text-right">admin@avondale-medical.co.zw</span>
-                </div>
-                <div className="flex justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium">GP:</span>
-                  <span className="text-right">dr.chikwanha@avondale-medical.co.zw</span>
-                </div>
-                <div className="flex justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium">Nurse:</span>
-                  <span className="text-right">nurse.mutasa@avondale-medical.co.zw</span>
-                </div>
-                <div className="flex justify-between p-2 bg-gray-50 rounded">
-                  <span className="font-medium">Reception:</span>
-                  <span className="text-right">reception@avondale-medical.co.zw</span>
-                </div>
-                <div className="flex justify-between p-2 bg-teal-50 rounded border border-teal-200">
-                  <span className="font-medium text-teal-700">Password (all):</span>
-                  <span className="font-mono text-teal-800">Password123!</span>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          KairoSystems - Healthcare Management for Zimbabwe
+          KairoSystems - Healthcare Management for Africa
         </p>
       </div>
     </div>

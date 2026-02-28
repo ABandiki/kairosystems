@@ -39,7 +39,7 @@ export default function SuperAdminLoginPage() {
       // Store super admin token and info
       if (typeof window !== 'undefined') {
         localStorage.setItem('super_admin_token', data.access_token);
-        localStorage.setItem('super_admin', JSON.stringify(data.superAdmin));
+        localStorage.setItem('super_admin', JSON.stringify(data.user));
       }
 
       router.push('/super-admin/dashboard');

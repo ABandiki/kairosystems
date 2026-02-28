@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Loader2, Stethoscope, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
+import { AlertCircle, Loader2, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
 import { onboardingApi, setAccessToken } from '@/lib/api';
 import { initDeviceFingerprint, getDeviceName, getDeviceType } from '@/lib/device-fingerprint';
+import Link from 'next/link';
 
 type Step = 'practice' | 'admin' | 'confirm';
 
@@ -137,9 +138,10 @@ export default function RegisterPage() {
       <div className="w-full max-w-xl">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#03989E] rounded-xl mb-4">
-            <Stethoscope className="w-8 h-8 text-white" />
-          </div>
+          <Link href="/" className="inline-block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.svg" alt="Kairo" className="w-16 h-16 mx-auto mb-4 rounded-xl hover:opacity-80 transition-opacity cursor-pointer" />
+          </Link>
           <h1 className="text-3xl font-bold text-gray-900">Register Your Practice</h1>
           <p className="text-gray-600">Set up your practice on Kairo</p>
         </div>
@@ -370,10 +372,10 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <h3 className="font-medium text-amber-800 mb-1">Plan: BASIC</h3>
+                    <h3 className="font-medium text-amber-800 mb-1">Plan: Starter</h3>
                     <p className="text-sm text-amber-700">
-                      Your plan includes 3 staff members (GP, Nurse, Receptionist).
-                      You can upgrade anytime from Settings.
+                      Your Starter plan includes 3 staff members.
+                      Contact us to upgrade to Professional or Custom.
                     </p>
                   </div>
                 </div>
@@ -415,7 +417,7 @@ export default function RegisterPage() {
         </Card>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          KairoSystems - Healthcare Management for Zimbabwe
+          KairoSystems - Healthcare Management for Africa
         </p>
       </div>
     </div>

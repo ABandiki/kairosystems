@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Clock, Users, Bell, AlertCircle, Plus, Monitor, Shield, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Building2, Clock, Users, Bell, AlertCircle, Plus, Monitor, Shield, CheckCircle, XCircle, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { usePractice, useAppointmentTypes, useRooms, usePharmacies } from '@/hooks/use-api';
-import { practiceApi, Practice, Room, Pharmacy, devicesApi, Device, staffUsageApi, StaffUsage } from '@/lib/api';
+import { practiceApi, Practice, Room, Pharmacy, devicesApi, Device, staffUsageApi, StaffUsage, invoicesApi } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
@@ -88,6 +88,15 @@ export default function SettingsPage() {
   // Staff usage state
   const [staffUsage, setStaffUsage] = useState<StaffUsage | null>(null);
   const [staffUsageLoading, setStaffUsageLoading] = useState(false);
+
+  // Billing PIN state
+  const [pinStatus, setPinStatus] = useState<{ hasPinSet: boolean; canBypass: boolean } | null>(null);
+  const [pinLoading, setPinLoading] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinSaving, setPinSaving] = useState(false);
+  const [pinError, setPinError] = useState('');
+  const [showRemovePinDialog, setShowRemovePinDialog] = useState(false);
 
   // Dialogs
   const [showNewRoomDialog, setShowNewRoomDialog] = useState(false);
@@ -156,6 +165,13 @@ export default function SettingsPage() {
     }
   }, [activeTab, user]);
 
+  // Load billing PIN status when tab is selected
+  useEffect(() => {
+    if (activeTab === 'billing-pin' && user && user.role === 'PRACTICE_ADMIN') {
+      loadPinStatus();
+    }
+  }, [activeTab, user]);
+
   const loadDevices = async () => {
     setDevicesLoading(true);
     try {
@@ -177,6 +193,64 @@ export default function SettingsPage() {
       console.error('Failed to load staff usage:', err);
     } finally {
       setStaffUsageLoading(false);
+    }
+  };
+
+  const loadPinStatus = async () => {
+    setPinLoading(true);
+    try {
+      const data = await invoicesApi.getBillingPinStatus();
+      setPinStatus(data);
+    } catch (err) {
+      console.error('Failed to load billing PIN status:', err);
+    } finally {
+      setPinLoading(false);
+    }
+  };
+
+  const handleSetPin = async () => {
+    setPinError('');
+    if (!newPin || !confirmPin) {
+      setPinError('Please enter and confirm your PIN.');
+      return;
+    }
+    if (newPin.length < 4 || newPin.length > 6) {
+      setPinError('PIN must be 4-6 digits.');
+      return;
+    }
+    if (!/^\d+$/.test(newPin)) {
+      setPinError('PIN must contain only digits.');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinError('PINs do not match.');
+      return;
+    }
+    setPinSaving(true);
+    try {
+      await invoicesApi.setBillingPin(newPin);
+      setNewPin('');
+      setConfirmPin('');
+      await loadPinStatus();
+    } catch (err) {
+      console.error('Failed to set billing PIN:', err);
+      setPinError('Failed to set PIN. Please try again.');
+    } finally {
+      setPinSaving(false);
+    }
+  };
+
+  const handleRemovePin = async () => {
+    setPinSaving(true);
+    try {
+      await invoicesApi.removeBillingPin();
+      setShowRemovePinDialog(false);
+      await loadPinStatus();
+    } catch (err) {
+      console.error('Failed to remove billing PIN:', err);
+      alert('Failed to remove PIN. Please try again.');
+    } finally {
+      setPinSaving(false);
     }
   };
 
@@ -436,6 +510,10 @@ export default function SettingsPage() {
           <TabsTrigger value="subscription" className="gap-2">
             <Shield className="h-4 w-4" />
             Subscription
+          </TabsTrigger>
+          <TabsTrigger value="billing-pin" className="gap-2">
+            <Lock className="h-4 w-4" />
+            Billing PIN
           </TabsTrigger>
         </TabsList>
 
@@ -956,7 +1034,12 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg border border-teal-200">
                       <div>
                         <p className="text-sm text-gray-600">Current Plan</p>
-                        <p className="text-2xl font-bold text-teal-700">{staffUsage.subscriptionTier}</p>
+                        <p className="text-2xl font-bold text-teal-700">
+                          {staffUsage.subscriptionTier === 'STARTER' ? 'Starter' :
+                           staffUsage.subscriptionTier === 'PROFESSIONAL' ? 'Professional' :
+                           staffUsage.subscriptionTier === 'CUSTOM' ? 'Custom' :
+                           staffUsage.subscriptionTier}
+                        </p>
                       </div>
                       <Button variant="outline" onClick={() => setShowUpgradeDialog(true)}>Upgrade Plan</Button>
                     </div>
@@ -1067,7 +1150,156 @@ export default function SettingsPage() {
             )}
           </div>
         </TabsContent>
+
+        {/* Billing PIN */}
+        <TabsContent value="billing-pin" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Billing PIN</CardTitle>
+              <CardDescription>
+                Manage a PIN to protect billing and invoice actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {user?.role !== 'PRACTICE_ADMIN' ? (
+                <div className="text-center py-8">
+                  <Lock className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Only practice administrators can manage the billing PIN.</p>
+                </div>
+              ) : pinLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : pinStatus ? (
+                <div className="space-y-6">
+                  {/* Current PIN Status */}
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium text-gray-700">Status:</p>
+                    {pinStatus.hasPinSet ? (
+                      <Badge className="bg-green-100 text-green-700 border-green-200">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        PIN Active
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        No PIN Set
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Set / Change PIN Form */}
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <h3 className="text-sm font-medium">
+                      {pinStatus.hasPinSet ? 'Change PIN' : 'Set PIN'}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-pin">New PIN (4-6 digits)</Label>
+                        <Input
+                          id="new-pin"
+                          type="password"
+                          maxLength={6}
+                          value={newPin}
+                          onChange={(e) => {
+                            setNewPin(e.target.value);
+                            setPinError('');
+                          }}
+                          placeholder="Enter PIN"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-pin">Confirm PIN</Label>
+                        <Input
+                          id="confirm-pin"
+                          type="password"
+                          maxLength={6}
+                          value={confirmPin}
+                          onChange={(e) => {
+                            setConfirmPin(e.target.value);
+                            setPinError('');
+                          }}
+                          placeholder="Confirm PIN"
+                        />
+                      </div>
+                    </div>
+                    {pinError && (
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {pinError}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <Button onClick={handleSetPin} disabled={pinSaving}>
+                        {pinSaving ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : pinStatus.hasPinSet ? (
+                          'Change PIN'
+                        ) : (
+                          'Set PIN'
+                        )}
+                      </Button>
+                      {pinStatus.hasPinSet && (
+                        <Button
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => setShowRemovePinDialog(true)}
+                          disabled={pinSaving}
+                        >
+                          Remove PIN
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">Failed to load billing PIN status</p>
+                  <Button variant="outline" size="sm" className="mt-3" onClick={loadPinStatus}>
+                    Try Again
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Remove PIN Confirmation Dialog */}
+      <Dialog open={showRemovePinDialog} onOpenChange={setShowRemovePinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Billing PIN</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove the billing PIN? This will disable PIN protection for billing actions.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRemovePinDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRemovePin}
+              disabled={pinSaving}
+            >
+              {pinSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                'Remove PIN'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* New Room Dialog */}
       <Dialog open={showNewRoomDialog} onOpenChange={setShowNewRoomDialog}>

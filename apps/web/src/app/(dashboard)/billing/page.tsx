@@ -64,6 +64,9 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-500' },
 };
 
+// Roles that can see the full billing dashboard (stats, statements, invoice list)
+const FULL_ACCESS_ROLES = ['PRACTICE_ADMIN', 'PRACTICE_MANAGER'];
+
 export default function BillingPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -74,7 +77,8 @@ export default function BillingPage() {
   const [selectedMonth, setSelectedMonth] = useState('2026-02');
   const [showMonthlyStatement, setShowMonthlyStatement] = useState(false);
 
-  const canFetch = !authLoading && !!user;
+  const isFullAccess = user?.role && FULL_ACCESS_ROLES.includes(user.role);
+  const canFetch = !authLoading && !!user && !!isFullAccess;
   const { data: invoicesData, isLoading: invoicesLoading, refetch } = useInvoices(
     {
       search: searchQuery || undefined,
@@ -94,7 +98,7 @@ export default function BillingPage() {
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || invoicesLoading) {
+  if (authLoading || (isFullAccess && invoicesLoading)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -105,6 +109,38 @@ export default function BillingPage() {
   if (!user) {
     return null;
   }
+
+  // ======================== RECEPTIONIST VIEW ========================
+  // Receptionist only sees a simple "Create Invoice" action — no stats, no lists
+  if (!isFullAccess) {
+    return (
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Create Invoice</h1>
+          <p className="text-gray-500">Create a new invoice for a patient</p>
+        </div>
+
+        <Card>
+          <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+            <div className="h-20 w-20 bg-teal-100 rounded-full flex items-center justify-center mb-6">
+              <Plus className="h-10 w-10 text-teal-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">New Invoice</h2>
+            <p className="text-gray-500 mb-6 max-w-md">
+              Create a new invoice for a patient visit. Select the patient, add line items, and save.
+            </p>
+            <Button size="lg" onClick={() => router.push('/billing/new')}>
+              <Plus className="h-5 w-5 mr-2" />
+              Create Invoice
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ======================== ADMIN / MANAGER VIEW ========================
+  // Full billing dashboard with stats, statements, filters, and invoice list
 
   // Use real stats from API or fall back to calculated values
   const billedThisMonth = billingStats?.billedThisMonth || 0;
@@ -151,8 +187,80 @@ export default function BillingPage() {
   };
 
   const handleDownloadStatement = () => {
-    // In production, this would generate a PDF
-    alert(`Downloading monthly statement for ${getMonthName(selectedMonth)}`);
+    // Generate a printable HTML statement and trigger browser print/save-as-PDF
+    const monthName = getMonthName(selectedMonth);
+    const data = monthlyStatement;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Monthly Statement - ${monthName}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; color: #333; max-width: 800px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #03989E; padding-bottom: 20px; }
+          .header h1 { color: #03989E; margin: 0; font-size: 28px; }
+          .header p { color: #666; margin: 5px 0 0; }
+          .period { font-size: 18px; font-weight: bold; margin: 20px 0; }
+          .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+          .summary-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; }
+          .summary-box .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+          .summary-box .value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+          .summary-box .sub { font-size: 11px; color: #9ca3af; }
+          .green { color: #16a34a; }
+          .amber { color: #d97706; }
+          .red { color: #dc2626; }
+          .rate-bar { background: #f3f4f6; border-radius: 20px; height: 20px; overflow: hidden; margin: 10px 0; }
+          .rate-fill { background: #03989E; height: 100%; border-radius: 20px; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #9ca3af; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Kairo</h1>
+          <p>Monthly Billing Statement</p>
+        </div>
+        <div class="period">Statement for ${monthName}</div>
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="label">Total Billed</div>
+            <div class="value">$${data.totalBilled.toFixed(2)}</div>
+            <div class="sub">${data.invoiceCount} invoices</div>
+          </div>
+          <div class="summary-box">
+            <div class="label">Total Collected</div>
+            <div class="value green">$${data.totalPaid.toFixed(2)}</div>
+            <div class="sub">${data.paidCount} paid</div>
+          </div>
+          <div class="summary-box">
+            <div class="label">Pending</div>
+            <div class="value amber">$${data.totalPending.toFixed(2)}</div>
+            <div class="sub">${data.pendingCount} pending</div>
+          </div>
+          <div class="summary-box">
+            <div class="label">Overdue</div>
+            <div class="value red">$${data.totalOverdue.toFixed(2)}</div>
+            <div class="sub">${data.overdueCount} overdue</div>
+          </div>
+        </div>
+        <div>
+          <strong>Collection Rate:</strong>
+          <div class="rate-bar"><div class="rate-fill" style="width:${data.totalBilled > 0 ? Math.round((data.totalPaid / data.totalBilled) * 100) : 0}%"></div></div>
+          <p>${data.totalBilled > 0 ? Math.round((data.totalPaid / data.totalBilled) * 100) : 0}% of billed amount collected</p>
+        </div>
+        <div class="footer">
+          <p>Generated by Kairo Practice Management System &bull; ${new Date().toLocaleDateString()}</p>
+          <p>kairo.clinic</p>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   // invoices are already filtered from API, use directly

@@ -132,6 +132,13 @@ export default function FormsPage() {
         <div className="flex gap-3">
           <Button
             variant="outline"
+            onClick={() => router.push('/forms/submissions')}
+          >
+            <ClipboardList className="h-4 w-4 mr-2" />
+            View Submissions
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => router.push('/forms/questionnaires')}
           >
             <ClipboardList className="h-4 w-4 mr-2" />
