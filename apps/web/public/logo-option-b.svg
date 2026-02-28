@@ -15,6 +15,6 @@
   <rect x="194" y="136" width="42" height="165" rx="21" fill="white" transform="rotate(42, 194, 256)" />
   <!-- Lower arm - angled -->
   <rect x="194" y="211" width="42" height="165" rx="21" fill="white" transform="rotate(-42, 194, 256)" />
-  <!-- Accent dot -->
+  <!-- Accent dot - like the dot on an "i", represents a care point -->
   <circle cx="358" cy="152" r="22" fill="white" opacity="0.5" />
 </svg>

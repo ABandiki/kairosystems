@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="gradC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#03989E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4CBD90;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="url(#gradC)" />
+  <rect x="32" y="32" width="448" height="448" rx="96" ry="96" fill="none" stroke="white" stroke-opacity="0.12" stroke-width="4" />
+  <!-- K with stethoscope concept -->
+  <!-- Vertical stroke -->
+  <path d="M 176 140 L 176 372" stroke="white" stroke-width="42" stroke-linecap="round" fill="none" />
+  <!-- Upper diagonal -->
+  <path d="M 196 260 L 310 148" stroke="white" stroke-width="42" stroke-linecap="round" fill="none" />
+  <!-- Lower diagonal that curves into stethoscope tubing -->
+  <path d="M 218 276 L 296 358 Q 330 394 358 362 Q 378 338 358 314 Q 338 290 314 310 Q 296 326 314 344"
+        stroke="white" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <!-- Stethoscope chest piece (small circle at the end) -->
+  <circle cx="322" cy="352" r="16" fill="none" stroke="white" stroke-width="6" />
+  <circle cx="322" cy="352" r="6" fill="white" />
+</svg>

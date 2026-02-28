@@ -1,0 +1,20 @@
+{
+  "name": "Kairo - GP Practice Management",
+  "short_name": "Kairo",
+  "description": "Modern GP Practice Management System for Healthcare Practices",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#03989E",
+  "background_color": "#ffffff",
+  "display": "standalone"
+}
