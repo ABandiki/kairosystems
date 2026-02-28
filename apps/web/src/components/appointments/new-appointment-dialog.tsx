@@ -183,7 +183,7 @@ export function NewAppointmentDialog({
                       {selectedPatient.firstName} {selectedPatient.lastName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {selectedPatient.nhsNumber || 'NHS number not recorded'}
+                      {selectedPatient.patientNumber || 'Patient number not recorded'}
                     </p>
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export function NewAppointmentDialog({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="Search patients by name or NHS number..."
+                    placeholder="Search patients by name or patient number..."
                     className="pl-9"
                     value={patientSearch}
                     onChange={(e) => setPatientSearch(e.target.value)}
@@ -220,7 +220,7 @@ export function NewAppointmentDialog({
                             {patient.firstName} {patient.lastName}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {patient.nhsNumber || 'No NHS number'}
+                            {patient.patientNumber || 'No patient number'}
                           </p>
                         </div>
                       </button>
