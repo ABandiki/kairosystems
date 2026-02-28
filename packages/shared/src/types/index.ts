@@ -83,7 +83,7 @@ export enum PrescriptionStatus {
 export interface Practice {
   id: string;
   name: string;
-  odsCode: string; // NHS ODS Code
+  odsCode: string; // Practice Code
   email: string;
   phone: string;
   address: Address;
@@ -140,7 +140,7 @@ export interface WorkingHours {
 export interface Patient {
   id: string;
   practiceId: string;
-  nhsNumber?: string;
+  patientNumber?: string;
   title?: string;
   firstName: string;
   lastName: string;

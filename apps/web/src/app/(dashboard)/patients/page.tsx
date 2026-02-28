@@ -99,7 +99,7 @@ function PatientsPageContent() {
     gender: 'MALE',
     email: '',
     phone: '',
-    nhsNumber: '',
+    patientNumber: '',
     addressLine1: '',
     city: '',
     postcode: '',
@@ -153,14 +153,9 @@ function PatientsPageContent() {
     }
   };
 
-  const formatNhsNumber = (nhs?: string) => {
-    if (!nhs) return 'Not recorded';
-    // Format as XXX XXX XXXX
-    const cleaned = nhs.replace(/\s/g, '');
-    if (cleaned.length === 10) {
-      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
-    }
-    return nhs;
+  const formatPatientNumber = (num?: string) => {
+    if (!num) return 'Not recorded';
+    return num;
   };
 
   const getRegisteredGpName = (patient: Patient) => {
@@ -185,7 +180,7 @@ function PatientsPageContent() {
         gender: 'MALE',
         email: '',
         phone: '',
-        nhsNumber: '',
+        patientNumber: '',
         addressLine1: '',
         city: '',
         postcode: '',
@@ -218,7 +213,7 @@ function PatientsPageContent() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search by name, NHS number, or email..."
+              placeholder="Search by name, patient number, or email..."
               className="pl-9"
               value={searchQuery}
               onChange={(e) => {
@@ -261,7 +256,7 @@ function PatientsPageContent() {
             <TableHeader>
               <TableRow>
                 <TableHead>Patient</TableHead>
-                <TableHead>NHS Number</TableHead>
+                <TableHead>Patient Number</TableHead>
                 <TableHead>Age / Gender</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Registered GP</TableHead>
@@ -303,7 +298,7 @@ function PatientsPageContent() {
             <TableHeader>
               <TableRow>
                 <TableHead>Patient</TableHead>
-                <TableHead>NHS Number</TableHead>
+                <TableHead>Patient Number</TableHead>
                 <TableHead>Age / Gender</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Registered GP</TableHead>
@@ -335,7 +330,7 @@ function PatientsPageContent() {
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-sm">
-                    {formatNhsNumber(patient.nhsNumber)}
+                    {formatPatientNumber(patient.patientNumber)}
                   </TableCell>
                   <TableCell>
                     {getPatientAge(patient.dateOfBirth)} yrs / {patient.gender}
@@ -476,12 +471,12 @@ function PatientsPageContent() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nhsNumber">NHS Number</Label>
+              <Label htmlFor="patientNumber">Patient Number</Label>
               <Input
-                id="nhsNumber"
+                id="patientNumber"
                 placeholder="123 456 7890"
-                value={newPatient.nhsNumber}
-                onChange={(e) => setNewPatient({ ...newPatient, nhsNumber: e.target.value })}
+                value={newPatient.patientNumber}
+                onChange={(e) => setNewPatient({ ...newPatient, patientNumber: e.target.value })}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

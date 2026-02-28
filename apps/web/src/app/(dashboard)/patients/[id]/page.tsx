@@ -212,13 +212,9 @@ export default function PatientDetailPage() {
     }
   };
 
-  const formatNhsNumber = (nhs?: string) => {
-    if (!nhs) return 'Not recorded';
-    const cleaned = nhs.replace(/\s/g, '');
-    if (cleaned.length === 10) {
-      return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
-    }
-    return nhs;
+  const formatPatientNumber = (num?: string) => {
+    if (!num) return 'Not recorded';
+    return num;
   };
 
   const handleAddNote = () => {
@@ -335,7 +331,7 @@ export default function PatientDetailPage() {
               </Badge>
             </div>
             <p className="text-gray-500">
-              {getPatientAge(patient.dateOfBirth)} years old • {patient.gender} • NHS: {formatNhsNumber(patient.nhsNumber)}
+              {getPatientAge(patient.dateOfBirth)} years old • {patient.gender} • Patient No: {formatPatientNumber(patient.patientNumber)}
             </p>
           </div>
         </div>
