@@ -11,6 +11,7 @@ export interface User {
   role: string;
   practiceId: string;
   avatar?: string;
+  subscriptionTier?: 'STARTER' | 'PROFESSIONAL' | 'CUSTOM';
 }
 
 export interface AuthResponse {
@@ -20,7 +21,7 @@ export interface AuthResponse {
 
 export interface Patient {
   id: string;
-  nhsNumber?: string;
+  patientNumber?: string;
   firstName: string;
   lastName: string;
   dateOfBirth: string;
@@ -783,6 +784,194 @@ export const invoicesApi = {
       method: 'DELETE',
     });
   },
+
+  // Billing PIN
+  getBillingPinStatus: async (): Promise<{ hasPinSet: boolean; canBypass: boolean }> => {
+    return apiFetch('/invoices/billing-pin/status');
+  },
+
+  verifyBillingPin: async (pin: string): Promise<{ verified: boolean }> => {
+    return apiFetch('/invoices/billing-pin/verify', {
+      method: 'POST',
+      body: JSON.stringify({ pin }),
+    });
+  },
+
+  setBillingPin: async (pin: string): Promise<{ success: boolean }> => {
+    return apiFetch('/invoices/billing-pin/set', {
+      method: 'POST',
+      body: JSON.stringify({ pin }),
+    });
+  },
+
+  removeBillingPin: async (): Promise<{ success: boolean }> => {
+    return apiFetch('/invoices/billing-pin', {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ==================== MESSAGING ====================
+
+export interface MessageLog {
+  id: string;
+  patientId: string;
+  channel: 'EMAIL' | 'SMS' | 'WHATSAPP';
+  recipient: string;
+  subject?: string;
+  body: string;
+  status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED';
+  statusDetail?: string;
+  sentById?: string;
+  appointmentId?: string;
+  sentAt?: string;
+  createdAt: string;
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  sentBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface MsgTemplate {
+  id: string;
+  name: string;
+  channel: 'EMAIL' | 'SMS' | 'WHATSAPP';
+  type: string;
+  subject?: string;
+  body: string;
+  isDefault: boolean;
+  isActive: boolean;
+}
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: any;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface MessagingStatus {
+  emailConfigured: boolean;
+  smsConfigured: boolean;
+  whatsappConfigured: boolean;
+}
+
+export const messagingApi = {
+  sendMessage: async (data: {
+    patientId: string;
+    channel: 'EMAIL' | 'SMS' | 'WHATSAPP';
+    subject?: string;
+    body: string;
+  }): Promise<any> => {
+    return apiFetch('/messaging/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  sendConfirmation: async (appointmentId: string): Promise<any> => {
+    return apiFetch(`/messaging/appointment/${appointmentId}/confirm`, {
+      method: 'POST',
+    });
+  },
+
+  sendReminder: async (appointmentId: string): Promise<any> => {
+    return apiFetch(`/messaging/appointment/${appointmentId}/remind`, {
+      method: 'POST',
+    });
+  },
+
+  getHistory: async (params?: {
+    patientId?: string;
+    channel?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<MessageLog>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.channel) searchParams.set('channel', params.channel);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch(`/messaging/history${query ? `?${query}` : ''}`);
+  },
+
+  getMessageById: async (id: string): Promise<MessageLog> => {
+    return apiFetch(`/messaging/history/${id}`);
+  },
+
+  getTemplates: async (): Promise<MsgTemplate[]> => {
+    return apiFetch('/messaging/templates');
+  },
+
+  createTemplate: async (data: Partial<MsgTemplate>): Promise<MsgTemplate> => {
+    return apiFetch('/messaging/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateTemplate: async (id: string, data: Partial<MsgTemplate>): Promise<MsgTemplate> => {
+    return apiFetch(`/messaging/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteTemplate: async (id: string): Promise<void> => {
+    return apiFetch(`/messaging/templates/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getStatus: async (): Promise<MessagingStatus> => {
+    return apiFetch('/messaging/status');
+  },
+};
+
+// ==================== NOTIFICATIONS ====================
+
+export const notificationsApi = {
+  getAll: async (params?: {
+    unreadOnly?: boolean;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<AppNotification>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.unreadOnly) searchParams.set('unreadOnly', 'true');
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch(`/notifications${query ? `?${query}` : ''}`);
+  },
+
+  getUnreadCount: async (): Promise<{ count: number }> => {
+    return apiFetch('/notifications/unread-count');
+  },
+
+  markAsRead: async (id: string): Promise<void> => {
+    return apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
+  },
+
+  markAllAsRead: async (): Promise<void> => {
+    return apiFetch('/notifications/read-all', { method: 'PUT' });
+  },
+
+  dismiss: async (id: string): Promise<void> => {
+    return apiFetch(`/notifications/${id}`, { method: 'DELETE' });
+  },
 };
 
 // Device types
@@ -913,5 +1102,308 @@ export interface StaffUsage {
 export const staffUsageApi = {
   getUsage: async (): Promise<StaffUsage> => {
     return apiFetch<StaffUsage>('/staff/usage');
+  },
+};
+
+// Prescription types
+export interface PrescriptionItem {
+  id?: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  route?: string;
+  quantity?: number;
+  unit?: string;
+  instructions?: string;
+}
+
+export interface Prescription {
+  id: string;
+  type: 'ACUTE' | 'REPEAT';
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
+  startDate: string;
+  endDate?: string;
+  reviewDate?: string;
+  notes?: string;
+  issuedAt: string;
+  items: PrescriptionItem[];
+  patientId: string;
+  patientName?: string;
+  prescriberId: string;
+  prescriberName?: string;
+}
+
+// Prescriptions API
+export const prescriptionsApi = {
+  getAll: async (params?: {
+    search?: string;
+    type?: string;
+    status?: string;
+    patientId?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<Prescription>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<Prescription>>(`/prescriptions${query ? `?${query}` : ''}`);
+  },
+  getById: async (id: string): Promise<Prescription> => {
+    return apiFetch<Prescription>(`/prescriptions/${id}`);
+  },
+  create: async (data: any): Promise<Prescription> => {
+    return apiFetch<Prescription>('/prescriptions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: any): Promise<Prescription> => {
+    return apiFetch<Prescription>(`/prescriptions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/prescriptions/${id}`, { method: 'DELETE' });
+  },
+};
+
+// Documents API
+export interface Document {
+  id: string;
+  type: string;
+  title: string;
+  description?: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedAt: string;
+  patientId: string;
+  patientName?: string;
+  uploadedByName?: string;
+}
+
+export const documentsApi = {
+  getAll: async (params?: {
+    patientId?: string;
+    type?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<Document>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<Document>>(`/documents${query ? `?${query}` : ''}`);
+  },
+  create: async (data: any): Promise<Document> => {
+    return apiFetch<Document>('/documents', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/documents/${id}`, { method: 'DELETE' });
+  },
+};
+
+// Medical History API
+export interface MedicalHistoryEntry {
+  id?: string;
+  condition: string;
+  diagnosedDate?: string;
+  status: string;
+  notes?: string;
+}
+
+export const medicalHistoryApi = {
+  getByPatient: async (patientId: string): Promise<MedicalHistoryEntry[]> => {
+    return apiFetch<MedicalHistoryEntry[]>(`/patients/${patientId}/medical-history`);
+  },
+  update: async (patientId: string, entries: MedicalHistoryEntry[]): Promise<MedicalHistoryEntry[]> => {
+    return apiFetch<MedicalHistoryEntry[]>(`/patients/${patientId}/medical-history`, {
+      method: 'PUT',
+      body: JSON.stringify({ entries }),
+    });
+  },
+};
+
+// Dashboard Tasks API
+export interface DashboardTask {
+  type: string;
+  label: string;
+  count: number;
+  route: string;
+  color: string;
+}
+
+export const dashboardApi = {
+  getTasks: async (): Promise<DashboardTask[]> => {
+    return apiFetch<DashboardTask[]>('/dashboard/tasks');
+  },
+};
+
+// Practice Analytics API
+export interface PracticeAnalytics {
+  patientDemographics: { gender: Record<string, number>; ageGroups: Record<string, number> };
+  appointmentStats: { byType: Record<string, number>; byClinician: Array<{ name: string; count: number }>; completionRate: number; dnaRate: number };
+  revenueStats: { monthly: Array<{ month: string; amount: number }>; byMethod: Record<string, number> };
+  staffWorkload: Array<{ name: string; appointments: number; patients: number }>;
+}
+
+export const reportsApi = {
+  getAnalytics: async (): Promise<PracticeAnalytics> => {
+    return apiFetch<PracticeAnalytics>('/practices/current/analytics');
+  },
+};
+
+// Form Submission types
+export interface FormSubmission {
+  id: string;
+  templateId: string;
+  patientId: string;
+  submittedById?: string;
+  answers: Record<string, any>;
+  score?: number | null;
+  scoreDetails?: {
+    totalScore: number;
+    maxPossibleScore: number;
+    questionScores: Array<{ questionId: string; value: number; maxValue: number }>;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+  patientName?: string;
+  templateName?: string;
+  submittedByName?: string | null;
+  template?: {
+    id: string;
+    name: string;
+    category: string;
+    description?: string;
+    questions?: any[];
+    questionCount?: number;
+  };
+  patient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth?: string;
+  };
+  submittedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+export interface TemplateStats {
+  totalSubmissions: number;
+  averageScore: number | null;
+  scoreDistribution: Record<string, number>;
+  lastSubmittedAt: string | null;
+}
+
+// Form Submissions API
+export const formSubmissionsApi = {
+  getAll: async (params?: {
+    search?: string;
+    patientId?: string;
+    templateId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<FormSubmission>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.templateId) searchParams.set('templateId', params.templateId);
+    if (params?.startDate) searchParams.set('startDate', params.startDate);
+    if (params?.endDate) searchParams.set('endDate', params.endDate);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<FormSubmission>>(`/form-submissions${query ? `?${query}` : ''}`);
+  },
+
+  getById: async (id: string): Promise<FormSubmission> => {
+    return apiFetch<FormSubmission>(`/form-submissions/${id}`);
+  },
+
+  getByPatient: async (patientId: string, params?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<FormSubmission>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<FormSubmission>>(`/form-submissions/patient/${patientId}${query ? `?${query}` : ''}`);
+  },
+
+  getTemplateStats: async (templateId: string): Promise<TemplateStats> => {
+    return apiFetch<TemplateStats>(`/form-submissions/template/${templateId}/stats`);
+  },
+
+  create: async (data: {
+    templateId: string;
+    patientId: string;
+    answers: Record<string, any>;
+    score?: number;
+    scoreDetails?: any;
+  }): Promise<FormSubmission> => {
+    return apiFetch<FormSubmission>('/form-submissions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: {
+    answers?: Record<string, any>;
+    score?: number;
+    scoreDetails?: any;
+  }): Promise<FormSubmission> => {
+    return apiFetch<FormSubmission>(`/form-submissions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/form-submissions/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Auth additions
+export const authPasswordApi = {
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    return apiFetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    return apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
+  changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+    return apiFetch('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
   },
 };
