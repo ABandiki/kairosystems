@@ -2,7 +2,11 @@
 const nextConfig = {
   transpilePackages: ['@kairo/shared'],
   images: {
-    domains: ['localhost', 'avatars.githubusercontent.com'],
+    remotePatterns: [
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'kairo.clinic' },
+    ],
   },
   // Stability improvements
   reactStrictMode: true,

@@ -1,5 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Shield } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Data Processing Agreement',
+  description:
+    'Data Processing Agreement between Kairo and healthcare practices. UK GDPR compliant DPA for healthcare data processing.',
+  alternates: { canonical: '/data-processing-agreement' },
+};
 
 function KairoLogo({ className = 'w-9 h-9' }: { className?: string }) {
   return (

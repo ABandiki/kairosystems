@@ -1,5 +1,18 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Terms & Conditions',
+  description:
+    'Terms and conditions for using the Kairo Practice Management System. Subscription plans, responsibilities, and service terms.',
+  alternates: { canonical: '/terms' },
+  openGraph: {
+    title: 'Terms & Conditions | Kairo',
+    description: 'Service agreement for Kairo Practice Management.',
+    url: '/terms',
+  },
+};
 
 function KairoLogo({ className = 'w-9 h-9' }: { className?: string }) {
   return (

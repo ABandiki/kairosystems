@@ -1,6 +1,45 @@
+import type { Metadata } from 'next';
 import { CookieBanner } from '@/components/cookie-banner';
 import { RequestDemoButton } from '@/components/request-demo-dialog';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Kairo | Practice Management Software for Healthcare Practices in Zimbabwe',
+  description:
+    'Kairo is a modern practice management system for private healthcare practices in Zimbabwe. Manage appointments, patient records, billing, prescriptions, clinical notes, and WhatsApp notifications in one platform. Start your free trial today.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Kairo | Practice Management Software for Zimbabwe',
+    description:
+      'All-in-one practice management for private clinics. Appointments, patient records, billing, prescriptions, and WhatsApp notifications.',
+    url: '/',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kairo | Practice Management Software',
+    description:
+      'Modern practice management for healthcare practices in Zimbabwe. Appointments, records, billing, prescriptions.',
+  },
+  keywords: [
+    'practice management software',
+    'practice management software Zimbabwe',
+    'healthcare software Zimbabwe',
+    'medical practice management',
+    'appointment scheduling',
+    'patient records',
+    'clinical notes',
+    'medical billing software',
+    'private clinic software',
+    'electronic health records',
+    'EHR Zimbabwe',
+    'GP practice management',
+    'WhatsApp appointment reminders',
+    'clinic management system',
+  ],
+};
 import {
   Calendar,
   Users,
@@ -58,6 +97,82 @@ function KairoLogoWhite({ className = 'w-5 h-5' }: { className?: string }) {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'SoftwareApplication',
+                name: 'Kairo',
+                applicationCategory: 'HealthApplication',
+                operatingSystem: 'Web',
+                description:
+                  'Modern practice management system for private healthcare practices in Zimbabwe. Manage appointments, patient records, billing, prescriptions, and clinical notes.',
+                url: 'https://kairo.clinic',
+                image: 'https://kairo.clinic/og-image.png',
+                offers: [
+                  {
+                    '@type': 'Offer',
+                    name: 'Starter',
+                    price: '49',
+                    priceCurrency: 'USD',
+                    url: 'https://kairo.clinic/#pricing',
+                  },
+                  {
+                    '@type': 'Offer',
+                    name: 'Professional',
+                    price: '99',
+                    priceCurrency: 'USD',
+                    url: 'https://kairo.clinic/#pricing',
+                  },
+                ],
+                featureList: [
+                  'Appointment Scheduling',
+                  'Patient Records',
+                  'Clinical Notes (SOAP)',
+                  'Billing & Invoicing',
+                  'Prescriptions',
+                  'WhatsApp & SMS Notifications',
+                  'Forms & Questionnaires',
+                  'Staff Management',
+                  'Analytics Dashboard',
+                ],
+              },
+              {
+                '@type': 'Organization',
+                name: 'Kairo',
+                legalName: 'Medpro Essentials Ltd',
+                url: 'https://kairo.clinic',
+                logo: 'https://kairo.clinic/og-image.png',
+                sameAs: [
+                  'https://www.facebook.com/profile.php?id=61587922967714',
+                  'https://www.instagram.com/kair.osystems/',
+                  'https://x.com/kairosystems',
+                  'https://www.linkedin.com/company/kairo-clinic/',
+                ],
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  telephone: '+263-785-767-099',
+                  contactType: 'sales',
+                  email: 'ashley@kairo.clinic',
+                  areaServed: 'ZW',
+                  availableLanguage: 'English',
+                },
+                foundingDate: '2025',
+              },
+              {
+                '@type': 'WebSite',
+                name: 'Kairo',
+                url: 'https://kairo.clinic',
+              },
+            ],
+          }),
+        }}
+      />
+
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-lg z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -114,6 +229,9 @@ export default function LandingPage() {
                 simplified
               </span>
             </h1>
+            <p className="mt-3 text-base sm:text-lg text-gray-500 font-medium">
+              Practice Management Software for Healthcare Practices in Zimbabwe
+            </p>
             <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Kairo brings together appointments, patient records, billing, and clinical notes
               in one intuitive platform — so you can spend less time on admin and more time with patients.

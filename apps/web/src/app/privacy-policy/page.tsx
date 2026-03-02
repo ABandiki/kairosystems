@@ -1,5 +1,18 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Shield } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description:
+    'How Kairo collects, uses, and protects your personal and patient data. UK GDPR and Zimbabwe Data Protection Act compliant.',
+  alternates: { canonical: '/privacy-policy' },
+  openGraph: {
+    title: 'Privacy Policy | Kairo',
+    description: 'How Kairo handles healthcare data for practices in Zimbabwe.',
+    url: '/privacy-policy',
+  },
+};
 
 function KairoLogo({ className = 'w-9 h-9' }: { className?: string }) {
   return (

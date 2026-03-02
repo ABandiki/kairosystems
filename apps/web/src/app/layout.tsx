@@ -6,9 +6,27 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Kairo - GP Practice Management',
-  description: 'Modern GP Practice Management System for Healthcare Practices in Zimbabwe. Manage appointments, patients, billing, and clinical notes.',
+  title: {
+    default: 'Kairo - Practice Management Software',
+    template: '%s | Kairo',
+  },
+  description: 'Modern Practice Management System for Healthcare Practices in Zimbabwe. Manage appointments, patients, billing, and clinical notes.',
   metadataBase: new URL('https://kairo.clinic'),
+  alternates: {
+    canonical: '/',
+  },
+  keywords: [
+    'practice management software',
+    'healthcare software Zimbabwe',
+    'clinic management system',
+    'appointment scheduling',
+    'patient records',
+    'medical billing',
+    'electronic health records',
+  ],
+  verification: {
+    google: 'AocnB-sdXeusuNcWIpKWdFaZgXWmMHfUF4eTfUuvRyw',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },

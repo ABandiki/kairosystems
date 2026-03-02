@@ -1,5 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Shield, FileText, ClipboardList, ArrowRight } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Legal Documents',
+  description:
+    'Legal documentation for Kairo Practice Management System. Privacy policy, terms of service, and data processing agreements.',
+  alternates: { canonical: '/legal' },
+};
 
 function KairoLogo({ className = 'w-9 h-9' }: { className?: string }) {
   return (

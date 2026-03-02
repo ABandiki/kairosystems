@@ -1,5 +1,13 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, ClipboardList, Download } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Patient Consent Form',
+  description:
+    'Patient consent form template for healthcare practices using the Kairo practice management system.',
+  alternates: { canonical: '/patient-consent-form' },
+};
 
 function KairoLogo({ className = 'w-9 h-9' }: { className?: string }) {
   return (
