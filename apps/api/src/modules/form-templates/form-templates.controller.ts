@@ -12,12 +12,15 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TierGuard } from '../auth/guards/tier.guard';
+import { RequireTier } from '../auth/decorators/tier.decorator';
 import { FormTemplatesService } from './form-templates.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('form-templates')
 @Controller('form-templates')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, TierGuard)
+@RequireTier('PROFESSIONAL', 'CUSTOM')
 @ApiBearerAuth()
 export class FormTemplatesController {
   constructor(private formTemplatesService: FormTemplatesService) {}

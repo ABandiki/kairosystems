@@ -74,4 +74,20 @@ export class PatientsController {
   async addAlert(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: any) {
     return this.patientsService.addAlert(id, req.user.practiceId, data);
   }
+
+  @Get(':id/medical-history')
+  @ApiOperation({ summary: 'Get patient medical history' })
+  async getMedicalHistory(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.patientsService.getMedicalHistory(id, req.user.practiceId);
+  }
+
+  @Put(':id/medical-history')
+  @ApiOperation({ summary: 'Update patient medical history' })
+  async updateMedicalHistory(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.patientsService.updateMedicalHistory(id, req.user.practiceId, data);
+  }
 }

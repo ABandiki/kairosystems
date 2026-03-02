@@ -7,18 +7,59 @@ import {
   Param,
   UseGuards,
   Req,
+  SetMetadata,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PracticesService } from './practices.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import { SKIP_TRIAL_CHECK_KEY } from '../auth/guards/trial.guard';
 
 @ApiTags('practices')
 @Controller('practices')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PracticesController {
-  constructor(private practicesService: PracticesService) {}
+  constructor(
+    private practicesService: PracticesService,
+    private prisma: PrismaService,
+  ) {}
+
+  @Get('trial-status')
+  @SetMetadata(SKIP_TRIAL_CHECK_KEY, true)
+  @ApiOperation({ summary: 'Get trial status for current practice' })
+  async getTrialStatus(@Req() req: AuthenticatedRequest) {
+    const practice = await this.prisma.practice.findUnique({
+      where: { id: req.user.practiceId },
+      select: {
+        isTrial: true,
+        trialEndsAt: true,
+        isActive: true,
+        subscriptionTier: true,
+        name: true,
+      },
+    });
+
+    if (!practice) {
+      return { isTrial: false, trialExpired: false };
+    }
+
+    const now = new Date();
+    const trialExpired = practice.isTrial && practice.trialEndsAt ? now > practice.trialEndsAt : false;
+    const trialEndsAt = practice.trialEndsAt;
+    const hoursRemaining = trialEndsAt ? Math.max(0, (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60)) : 0;
+
+    return {
+      practiceName: practice.name,
+      isTrial: practice.isTrial,
+      trialEndsAt,
+      trialExpired,
+      hoursRemaining: Math.round(hoursRemaining * 10) / 10,
+      subscriptionTier: practice.subscriptionTier,
+      isActive: practice.isActive,
+    };
+  }
 
   @Get('current')
   @ApiOperation({ summary: 'Get current practice details' })
@@ -89,5 +130,11 @@ export class PracticesController {
       req.user.practiceId,
       data,
     );
+  }
+
+  @Get('current/analytics')
+  @ApiOperation({ summary: 'Get practice-level analytics and reports' })
+  async getAnalytics(@Req() req: AuthenticatedRequest) {
+    return this.practicesService.getAnalytics(req.user.practiceId);
   }
 }

@@ -139,8 +139,17 @@ export class StaffService {
       throw new NotFoundException('Practice not found');
     }
 
-    // Enterprise tier has unlimited staff
-    if (practice.subscriptionTier === SubscriptionTier.ENTERPRISE) {
+    // Custom tier uses the maxStaffIncluded set by super admin
+    if (practice.subscriptionTier === SubscriptionTier.CUSTOM) {
+      const currentStaffCount = await this.prisma.user.count({
+        where: { practiceId, isActive: true },
+      });
+      if (currentStaffCount >= practice.maxStaffIncluded) {
+        throw new ForbiddenException(
+          `Staff limit reached. Your Custom plan includes ${practice.maxStaffIncluded} staff members. ` +
+          `You currently have ${currentStaffCount} active staff. Please contact support to add more staff.`
+        );
+      }
       return;
     }
 
@@ -164,14 +173,12 @@ export class StaffService {
    */
   private getMaxStaffForTier(tier: SubscriptionTier): number {
     switch (tier) {
-      case SubscriptionTier.BASIC:
-        return 3; // GP, Nurse, Receptionist
-      case SubscriptionTier.STANDARD:
-        return 5;
-      case SubscriptionTier.PREMIUM:
+      case SubscriptionTier.STARTER:
+        return 3;
+      case SubscriptionTier.PROFESSIONAL:
         return 10;
-      case SubscriptionTier.ENTERPRISE:
-        return Infinity;
+      case SubscriptionTier.CUSTOM:
+        return Infinity; // Custom uses maxStaffIncluded from practice record
       default:
         return 3;
     }
@@ -189,7 +196,7 @@ export class StaffService {
       },
     });
 
-    if (!practice || practice.subscriptionTier === SubscriptionTier.ENTERPRISE) {
+    if (!practice) {
       return;
     }
 

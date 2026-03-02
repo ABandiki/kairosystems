@@ -42,6 +42,40 @@ export class SuperAdminController {
     return this.superAdminService.getAllPractices();
   }
 
+  @Get('analytics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get system-wide analytics' })
+  async getAnalytics() {
+    return this.superAdminService.getAnalytics();
+  }
+
+  @Get('revenue')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get revenue overview' })
+  async getRevenueOverview() {
+    return this.superAdminService.getRevenueOverview();
+  }
+
+  @Get('activity-log')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get super admin activity log' })
+  async getActivityLog(
+    @Query('practiceId') practiceId?: string,
+    @Query('action') action?: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.superAdminService.getActivityLog(undefined, practiceId, limit);
+  }
+
   @Get('practices/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
@@ -82,6 +116,54 @@ export class SuperAdminController {
     return this.superAdminService.createPracticeAdmin(req.user.sub, practiceId, data);
   }
 
+  @Post('practices/:id/staff')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a staff member for a practice' })
+  async createStaffMember(
+    @Req() req: any,
+    @Param('id') practiceId: string,
+    @Body() data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      phone?: string;
+    },
+  ) {
+    return this.superAdminService.createStaffMember(req.user.sub, practiceId, data);
+  }
+
+  @Post('practices/:id/notify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Send notification to a practice' })
+  async sendPracticeNotification(
+    @Req() req: any,
+    @Param('id') practiceId: string,
+    @Body() data: { title: string; message: string },
+  ) {
+    return this.superAdminService.sendPracticeNotification(req.user.sub, practiceId, data);
+  }
+
+  @Post('broadcast')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Broadcast notification to all practices' })
+  async broadcastNotification(
+    @Req() req: any,
+    @Body() data: { title: string; message: string },
+  ) {
+    return this.superAdminService.broadcastNotification(req.user.sub, data);
+  }
+
   @Put('practices/:id/subscription')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
@@ -95,12 +177,22 @@ export class SuperAdminController {
       subscriptionTier?: string;
       maxStaffIncluded?: number;
       extraStaffCount?: number;
+      subscriptionStartDate?: string;
+      subscriptionEndDate?: string;
+      isTrial?: boolean;
+      trialEndsAt?: string | null;
     },
   ) {
+    const processedData: any = { ...data };
+    if (data.subscriptionStartDate) processedData.subscriptionStartDate = new Date(data.subscriptionStartDate);
+    if (data.subscriptionEndDate) processedData.subscriptionEndDate = new Date(data.subscriptionEndDate);
+    if (data.trialEndsAt) processedData.trialEndsAt = new Date(data.trialEndsAt);
+    if (data.trialEndsAt === null) processedData.trialEndsAt = null;
+
     return this.superAdminService.updatePracticeSubscription(
       req.user.sub,
       practiceId,
-      data,
+      processedData,
     );
   }
 
@@ -122,6 +214,40 @@ export class SuperAdminController {
     );
   }
 
+  @Put('practices/bulk/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk activate/deactivate practices' })
+  async bulkUpdateStatus(
+    @Req() req: any,
+    @Body() data: { practiceIds: string[]; isActive: boolean },
+  ) {
+    return this.superAdminService.bulkUpdatePracticeStatus(
+      req.user.sub,
+      data.practiceIds,
+      data.isActive,
+    );
+  }
+
+  @Put('practices/bulk/extend-trial')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk extend trials' })
+  async bulkExtendTrials(
+    @Req() req: any,
+    @Body() data: { practiceIds: string[]; days: number },
+  ) {
+    return this.superAdminService.bulkExtendTrials(
+      req.user.sub,
+      data.practiceIds,
+      data.days,
+    );
+  }
+
   @Put('devices/:id/approve')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
@@ -132,16 +258,52 @@ export class SuperAdminController {
     return this.superAdminService.approveDevice(req.user.sub, deviceId);
   }
 
-  @Get('activity-log')
+  @Put('devices/:id/revoke')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
   @SkipDeviceCheck()
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get super admin activity log' })
-  async getActivityLog(
-    @Query('practiceId') practiceId?: string,
-    @Query('limit') limit?: number,
+  @ApiOperation({ summary: 'Revoke a device' })
+  async revokeDevice(
+    @Req() req: any,
+    @Param('id') deviceId: string,
+    @Body() data: { reason?: string },
   ) {
-    return this.superAdminService.getActivityLog(undefined, practiceId, limit);
+    return this.superAdminService.revokeDevice(req.user.sub, deviceId, data.reason);
+  }
+
+  @Put('staff/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update a staff member' })
+  async updateStaffMember(
+    @Req() req: any,
+    @Param('id') userId: string,
+    @Body() data: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      role?: string;
+      isActive?: boolean;
+      phone?: string;
+    },
+  ) {
+    return this.superAdminService.updateStaffMember(req.user.sub, userId, data);
+  }
+
+  @Put('staff/:id/reset-password')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reset a staff member password' })
+  async resetStaffPassword(
+    @Req() req: any,
+    @Param('id') userId: string,
+    @Body() data: { password: string },
+  ) {
+    return this.superAdminService.resetStaffPassword(req.user.sub, userId, data.password);
   }
 }

@@ -28,7 +28,7 @@ export class PatientsService {
         OR: [
           { firstName: { contains: search, mode: 'insensitive' } },
           { lastName: { contains: search, mode: 'insensitive' } },
-          { nhsNumber: { contains: search } },
+          { patientNumber: { contains: search } },
           { email: { contains: search, mode: 'insensitive' } },
         ],
       }),
@@ -186,5 +186,71 @@ export class PatientsService {
       activePatients,
       registeredToday,
     };
+  }
+
+  async getMedicalHistory(patientId: string, practiceId: string) {
+    // Verify patient belongs to practice
+    await this.findById(patientId, practiceId);
+
+    return this.prisma.medicalHistory.findMany({
+      where: { patientId },
+      orderBy: [{ isActive: 'desc' }, { date: 'desc' }],
+    });
+  }
+
+  async updateMedicalHistory(
+    patientId: string,
+    practiceId: string,
+    data: {
+      entries: Array<{
+        id?: string;
+        type: string;
+        description: string;
+        date?: string;
+        notes?: string;
+        isActive?: boolean;
+      }>;
+    },
+  ) {
+    // Verify patient belongs to practice
+    await this.findById(patientId, practiceId);
+
+    const results = [];
+
+    for (const entry of data.entries) {
+      if (entry.id) {
+        // Update existing entry
+        const updated = await this.prisma.medicalHistory.updateMany({
+          where: { id: entry.id, patientId },
+          data: {
+            type: entry.type,
+            description: entry.description,
+            date: entry.date ? new Date(entry.date) : undefined,
+            notes: entry.notes,
+            isActive: entry.isActive !== undefined ? entry.isActive : true,
+          },
+        });
+        results.push({ id: entry.id, action: 'updated', ...updated });
+      } else {
+        // Create new entry
+        const created = await this.prisma.medicalHistory.create({
+          data: {
+            patient: { connect: { id: patientId } },
+            type: entry.type,
+            description: entry.description,
+            date: entry.date ? new Date(entry.date) : null,
+            notes: entry.notes,
+            isActive: entry.isActive !== undefined ? entry.isActive : true,
+          },
+        });
+        results.push({ id: created.id, action: 'created' });
+      }
+    }
+
+    // Return updated medical history
+    return this.prisma.medicalHistory.findMany({
+      where: { patientId },
+      orderBy: [{ isActive: 'desc' }, { date: 'desc' }],
+    });
   }
 }

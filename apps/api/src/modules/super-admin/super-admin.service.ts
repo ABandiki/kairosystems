@@ -22,17 +22,8 @@ export class SuperAdminService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Support both bcrypt hashed passwords and base64 encoded (for demo/dev)
-    let isPasswordValid = false;
-
-    if (admin.password.startsWith('$2')) {
-      // Bcrypt hash (production)
-      isPasswordValid = await bcrypt.compare(password, admin.password);
-    } else {
-      // Base64 comparison (for demo seeded data)
-      const base64Password = Buffer.from(password).toString('base64');
-      isPasswordValid = admin.password === base64Password;
-    }
+    // Validate password (bcrypt only)
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -86,6 +77,10 @@ export class SuperAdminService {
         subscriptionTier: true,
         maxStaffIncluded: true,
         extraStaffCount: true,
+        isTrial: true,
+        trialEndsAt: true,
+        subscriptionStartDate: true,
+        subscriptionEndDate: true,
         createdAt: true,
         _count: {
           select: {
@@ -162,7 +157,7 @@ export class SuperAdminService {
     const practice = await this.prisma.practice.create({
       data: {
         ...data,
-        subscriptionTier: (data.subscriptionTier as any) || 'BASIC',
+        subscriptionTier: (data.subscriptionTier as any) || 'STARTER',
         maxStaffIncluded: data.maxStaffIncluded || 3,
         subscriptionStartDate: new Date(),
       },
@@ -228,17 +223,29 @@ export class SuperAdminService {
       subscriptionTier?: string;
       maxStaffIncluded?: number;
       extraStaffCount?: number;
+      subscriptionStartDate?: Date;
       subscriptionEndDate?: Date;
+      isTrial?: boolean;
+      trialEndsAt?: Date | null;
     },
   ) {
+    const updateData: any = {};
+    if (data.subscriptionTier !== undefined) updateData.subscriptionTier = data.subscriptionTier as any;
+    if (data.maxStaffIncluded !== undefined) updateData.maxStaffIncluded = data.maxStaffIncluded;
+    if (data.extraStaffCount !== undefined) updateData.extraStaffCount = data.extraStaffCount;
+    if (data.subscriptionStartDate !== undefined) updateData.subscriptionStartDate = data.subscriptionStartDate;
+    if (data.subscriptionEndDate !== undefined) updateData.subscriptionEndDate = data.subscriptionEndDate;
+    if (data.isTrial !== undefined) updateData.isTrial = data.isTrial;
+    if (data.trialEndsAt !== undefined) updateData.trialEndsAt = data.trialEndsAt;
+
+    // When activating a paid subscription (trial -> paid), auto-set start date
+    if (data.isTrial === false && !data.subscriptionStartDate) {
+      updateData.subscriptionStartDate = new Date();
+    }
+
     const practice = await this.prisma.practice.update({
       where: { id: practiceId },
-      data: {
-        subscriptionTier: data.subscriptionTier as any,
-        maxStaffIncluded: data.maxStaffIncluded,
-        extraStaffCount: data.extraStaffCount,
-        subscriptionEndDate: data.subscriptionEndDate,
-      },
+      data: updateData,
     });
 
     // Log the action
@@ -332,6 +339,483 @@ export class SuperAdminService {
         details,
       },
     });
+  }
+
+  /**
+   * Revoke a device
+   */
+  async revokeDevice(superAdminId: string, deviceId: string, reason?: string) {
+    const device = await this.prisma.device.update({
+      where: { id: deviceId },
+      data: {
+        status: 'REVOKED',
+        revokedAt: new Date(),
+        revokedReason: reason || 'Revoked by super admin',
+      },
+    });
+
+    await this.logActivity(superAdminId, 'REVOKE_DEVICE', device.practiceId, {
+      deviceId,
+      deviceName: device.deviceName,
+      reason,
+    });
+
+    return device;
+  }
+
+  /**
+   * Get system-wide analytics
+   */
+  async getAnalytics() {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get all practices with counts
+    const practices = await this.prisma.practice.findMany({
+      select: {
+        id: true,
+        name: true,
+        subscriptionTier: true,
+        isTrial: true,
+        trialEndsAt: true,
+        isActive: true,
+        createdAt: true,
+        _count: {
+          select: {
+            users: true,
+            patients: true,
+            appointments: true,
+            invoices: true,
+          },
+        },
+      },
+    });
+
+    // Tier breakdown
+    const tierBreakdown = {
+      STARTER: practices.filter((p) => p.subscriptionTier === 'STARTER').length,
+      PROFESSIONAL: practices.filter((p) => p.subscriptionTier === 'PROFESSIONAL').length,
+      CUSTOM: practices.filter((p) => p.subscriptionTier === 'CUSTOM').length,
+    };
+
+    // Trial vs Paid
+    const trialCount = practices.filter((p) => p.isTrial).length;
+    const paidCount = practices.filter((p) => !p.isTrial).length;
+    const expiredTrials = practices.filter(
+      (p) => p.isTrial && p.trialEndsAt && new Date(p.trialEndsAt) < now,
+    ).length;
+    const activeTrials = trialCount - expiredTrials;
+
+    // Practices created in last 30 days
+    const newPractices30d = practices.filter(
+      (p) => new Date(p.createdAt) > thirtyDaysAgo,
+    ).length;
+    const newPractices7d = practices.filter(
+      (p) => new Date(p.createdAt) > sevenDaysAgo,
+    ).length;
+
+    // Totals across all practices
+    const totalStaff = practices.reduce((sum, p) => sum + p._count.users, 0);
+    const totalPatients = practices.reduce((sum, p) => sum + p._count.patients, 0);
+    const totalAppointments = practices.reduce((sum, p) => sum + p._count.appointments, 0);
+    const totalInvoices = practices.reduce((sum, p) => sum + p._count.invoices, 0);
+
+    // Monthly growth (practices created per month, last 6 months)
+    const monthlyGrowth: { month: string; practices: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const count = practices.filter((p) => {
+        const created = new Date(p.createdAt);
+        return created >= monthStart && created <= monthEnd;
+      }).length;
+      monthlyGrowth.push({
+        month: monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        practices: count,
+      });
+    }
+
+    // Top practices by staff count
+    const topPractices = [...practices]
+      .sort((a, b) => b._count.users - a._count.users)
+      .slice(0, 5)
+      .map((p) => ({
+        name: p.name,
+        staff: p._count.users,
+        patients: p._count.patients,
+        appointments: p._count.appointments,
+        tier: p.subscriptionTier,
+      }));
+
+    return {
+      overview: {
+        totalPractices: practices.length,
+        activePractices: practices.filter((p) => p.isActive).length,
+        inactivePractices: practices.filter((p) => !p.isActive).length,
+        totalStaff,
+        totalPatients,
+        totalAppointments,
+        totalInvoices,
+      },
+      subscriptions: {
+        tierBreakdown,
+        trialCount,
+        paidCount,
+        activeTrials,
+        expiredTrials,
+      },
+      growth: {
+        newPractices7d,
+        newPractices30d,
+        monthlyGrowth,
+      },
+      topPractices,
+    };
+  }
+
+  /**
+   * Update a staff member from super admin
+   */
+  async updateStaffMember(
+    superAdminId: string,
+    userId: string,
+    data: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      role?: string;
+      isActive?: boolean;
+      phone?: string;
+    },
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updateData: any = {};
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.role !== undefined) updateData.role = data.role as any;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        phone: true,
+        practiceId: true,
+      },
+    });
+
+    await this.logActivity(superAdminId, 'UPDATE_STAFF', user.practiceId, {
+      userId,
+      changes: data,
+    });
+
+    return updatedUser;
+  }
+
+  /**
+   * Create a staff member for a practice from super admin
+   */
+  async createStaffMember(
+    superAdminId: string,
+    practiceId: string,
+    data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      phone?: string;
+    },
+  ) {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role as any,
+        phone: data.phone,
+        practiceId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+      },
+    });
+
+    await this.logActivity(superAdminId, 'CREATE_STAFF', practiceId, {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return user;
+  }
+
+  /**
+   * Reset a staff member's password from super admin
+   */
+  async resetStaffPassword(superAdminId: string, userId: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    await this.logActivity(superAdminId, 'RESET_PASSWORD', user.practiceId, {
+      userId,
+      email: user.email,
+    });
+
+    return { success: true, message: 'Password reset successfully' };
+  }
+
+  /**
+   * Bulk activate/deactivate practices
+   */
+  async bulkUpdatePracticeStatus(
+    superAdminId: string,
+    practiceIds: string[],
+    isActive: boolean,
+  ) {
+    await this.prisma.practice.updateMany({
+      where: { id: { in: practiceIds } },
+      data: { isActive },
+    });
+
+    for (const practiceId of practiceIds) {
+      await this.logActivity(
+        superAdminId,
+        isActive ? 'BULK_ACTIVATE' : 'BULK_DEACTIVATE',
+        practiceId,
+      );
+    }
+
+    return { success: true, count: practiceIds.length };
+  }
+
+  /**
+   * Bulk extend trials
+   */
+  async bulkExtendTrials(
+    superAdminId: string,
+    practiceIds: string[],
+    days: number,
+  ) {
+    const newEnd = new Date();
+    newEnd.setDate(newEnd.getDate() + days);
+
+    await this.prisma.practice.updateMany({
+      where: {
+        id: { in: practiceIds },
+        isTrial: true,
+      },
+      data: { trialEndsAt: newEnd },
+    });
+
+    for (const practiceId of practiceIds) {
+      await this.logActivity(superAdminId, 'BULK_EXTEND_TRIAL', practiceId, { days });
+    }
+
+    return { success: true, count: practiceIds.length, newTrialEnd: newEnd };
+  }
+
+  /**
+   * Send notification to a practice's admin users
+   */
+  async sendPracticeNotification(
+    superAdminId: string,
+    practiceId: string,
+    data: { title: string; message: string },
+  ) {
+    // Get all admin users for the practice
+    const admins = await this.prisma.user.findMany({
+      where: {
+        practiceId,
+        role: { in: ['PRACTICE_ADMIN', 'PRACTICE_MANAGER'] },
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    // Create notifications for each admin
+    const notifications = await Promise.all(
+      admins.map((admin) =>
+        this.prisma.notification.create({
+          data: {
+            practiceId,
+            userId: admin.id,
+            type: 'SYSTEM',
+            title: data.title,
+            message: data.message,
+            data: { fromSuperAdmin: true },
+          },
+        }),
+      ),
+    );
+
+    await this.logActivity(superAdminId, 'SEND_NOTIFICATION', practiceId, {
+      title: data.title,
+      recipientCount: admins.length,
+    });
+
+    return { success: true, notificationsSent: notifications.length };
+  }
+
+  /**
+   * Broadcast notification to all practices
+   */
+  async broadcastNotification(
+    superAdminId: string,
+    data: { title: string; message: string },
+  ) {
+    // Get all active practice admin users
+    const admins = await this.prisma.user.findMany({
+      where: {
+        role: { in: ['PRACTICE_ADMIN', 'PRACTICE_MANAGER'] },
+        isActive: true,
+        practice: { isActive: true },
+      },
+      select: { id: true, practiceId: true },
+    });
+
+    // Create notifications for each admin
+    const notifications = await Promise.all(
+      admins.map((admin) =>
+        this.prisma.notification.create({
+          data: {
+            practiceId: admin.practiceId,
+            userId: admin.id,
+            type: 'SYSTEM',
+            title: data.title,
+            message: data.message,
+            data: { fromSuperAdmin: true, broadcast: true },
+          },
+        }),
+      ),
+    );
+
+    await this.logActivity(superAdminId, 'BROADCAST_NOTIFICATION', null, {
+      title: data.title,
+      recipientCount: admins.length,
+    });
+
+    return { success: true, notificationsSent: notifications.length };
+  }
+
+  /**
+   * Get revenue overview across all practices
+   */
+  async getRevenueOverview() {
+    const now = new Date();
+
+    // Get all invoices with practice info
+    const invoices = await this.prisma.invoice.findMany({
+      select: {
+        id: true,
+        total: true,
+        status: true,
+        issueDate: true,
+        paidAt: true,
+        practiceId: true,
+        practice: {
+          select: {
+            name: true,
+            subscriptionTier: true,
+          },
+        },
+      },
+    });
+
+    // Summary stats
+    const totalRevenue = invoices
+      .filter((i) => i.status === 'PAID')
+      .reduce((sum, i) => sum + i.total, 0);
+    const pendingRevenue = invoices
+      .filter((i) => i.status === 'PENDING' || i.status === 'DRAFT')
+      .reduce((sum, i) => sum + i.total, 0);
+    const overdueRevenue = invoices
+      .filter((i) => i.status === 'OVERDUE')
+      .reduce((sum, i) => sum + i.total, 0);
+
+    // Monthly revenue (last 6 months)
+    const monthlyRevenue: { month: string; revenue: number; invoices: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const monthInvoices = invoices.filter((inv) => {
+        const date = new Date(inv.issueDate);
+        return date >= monthStart && date <= monthEnd && inv.status === 'PAID';
+      });
+      monthlyRevenue.push({
+        month: monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        revenue: monthInvoices.reduce((sum, i) => sum + i.total, 0),
+        invoices: monthInvoices.length,
+      });
+    }
+
+    // Revenue by practice
+    const practiceRevenueMap = new Map<string, { name: string; tier: string; revenue: number; invoiceCount: number }>();
+    for (const inv of invoices.filter((i) => i.status === 'PAID')) {
+      const existing = practiceRevenueMap.get(inv.practiceId);
+      if (existing) {
+        existing.revenue += inv.total;
+        existing.invoiceCount += 1;
+      } else {
+        practiceRevenueMap.set(inv.practiceId, {
+          name: inv.practice.name,
+          tier: inv.practice.subscriptionTier,
+          revenue: inv.total,
+          invoiceCount: 1,
+        });
+      }
+    }
+
+    const revenueByPractice = Array.from(practiceRevenueMap.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    // Invoice status breakdown
+    const statusBreakdown = {
+      PAID: invoices.filter((i) => i.status === 'PAID').length,
+      PENDING: invoices.filter((i) => i.status === 'PENDING').length,
+      DRAFT: invoices.filter((i) => i.status === 'DRAFT').length,
+      OVERDUE: invoices.filter((i) => i.status === 'OVERDUE').length,
+      CANCELLED: invoices.filter((i) => i.status === 'CANCELLED').length,
+    };
+
+    return {
+      summary: {
+        totalRevenue,
+        pendingRevenue,
+        overdueRevenue,
+        totalInvoices: invoices.length,
+      },
+      monthlyRevenue,
+      revenueByPractice,
+      statusBreakdown,
+    };
   }
 
   /**

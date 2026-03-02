@@ -1,12 +1,10 @@
 import { PrismaClient, UserRole, Gender, PatientStatus, AppointmentType, AppointmentStatus, AlertType, AlertSeverity } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-// Simple hash function for demo (in production, use bcrypt)
 async function hashPassword(password: string): Promise<string> {
-  // For demo purposes, we'll use a simple base64 encoding
-  // In production, import bcrypt and use: await bcrypt.hash(password, 10)
-  return Buffer.from(password).toString('base64');
+  return bcrypt.hash(password, 10);
 }
 
 async function main() {
@@ -210,7 +208,7 @@ async function main() {
   // Create patients using upsert to handle existing records
   const patients = await Promise.all([
     prisma.patient.upsert({
-      where: { nhsNumber: '9876543210' },
+      where: { patientNumber: '9876543210' },
       update: {
         firstName: 'Tapiwa',
         lastName: 'Madziva',
@@ -221,7 +219,7 @@ async function main() {
         postcode: '',
       },
       create: {
-        nhsNumber: '9876543210',
+        patientNumber: '9876543210',
         firstName: 'Tapiwa',
         lastName: 'Madziva',
         dateOfBirth: new Date('1985-03-15'),
@@ -237,7 +235,7 @@ async function main() {
       },
     }),
     prisma.patient.upsert({
-      where: { nhsNumber: '1234567890' },
+      where: { patientNumber: '1234567890' },
       update: {
         firstName: 'Nyasha',
         lastName: 'Chikowore',
@@ -248,7 +246,7 @@ async function main() {
         postcode: '',
       },
       create: {
-        nhsNumber: '1234567890',
+        patientNumber: '1234567890',
         firstName: 'Nyasha',
         lastName: 'Chikowore',
         dateOfBirth: new Date('1992-07-22'),
@@ -264,7 +262,7 @@ async function main() {
       },
     }),
     prisma.patient.upsert({
-      where: { nhsNumber: '5555555555' },
+      where: { patientNumber: '5555555555' },
       update: {
         firstName: 'Farai',
         lastName: 'Zvobgo',
@@ -275,7 +273,7 @@ async function main() {
         postcode: '',
       },
       create: {
-        nhsNumber: '5555555555',
+        patientNumber: '5555555555',
         firstName: 'Farai',
         lastName: 'Zvobgo',
         dateOfBirth: new Date('1958-11-08'),
@@ -291,7 +289,7 @@ async function main() {
       },
     }),
     prisma.patient.upsert({
-      where: { nhsNumber: '7777777777' },
+      where: { patientNumber: '7777777777' },
       update: {
         firstName: 'Chiedza',
         lastName: 'Mangwana',
@@ -301,7 +299,7 @@ async function main() {
         postcode: '',
       },
       create: {
-        nhsNumber: '7777777777',
+        patientNumber: '7777777777',
         firstName: 'Chiedza',
         lastName: 'Mangwana',
         dateOfBirth: new Date('2015-04-12'),
@@ -459,7 +457,7 @@ async function main() {
     { type: AppointmentType.NURSE_APPOINTMENT, duration: 15, color: '#EC4899', label: 'Nurse Appointment', code: 'NURSE' },
     { type: AppointmentType.NURSE_CHRONIC_DISEASE, duration: 20, color: '#D946EF', label: 'Chronic Disease Review', code: 'CDR' },
     { type: AppointmentType.HCA_BLOOD_TEST, duration: 10, color: '#F97316', label: 'Blood Test', code: 'BLOOD' },
-    { type: AppointmentType.HCA_HEALTH_CHECK, duration: 30, color: '#14B8A6', label: 'NHS Health Check', code: 'HEALTH' },
+    { type: AppointmentType.HCA_HEALTH_CHECK, duration: 30, color: '#14B8A6', label: 'Health Check', code: 'HEALTH' },
     { type: AppointmentType.VACCINATION, duration: 10, color: '#06B6D4', label: 'Vaccination', code: 'VAC' },
     { type: AppointmentType.SMEAR_TEST, duration: 15, color: '#EF4444', label: 'Cervical Screening', code: 'SMEAR' },
     { type: AppointmentType.MINOR_SURGERY, duration: 30, color: '#6366F1', label: 'Minor Surgery', code: 'SURG' },

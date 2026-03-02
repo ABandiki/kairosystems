@@ -112,10 +112,9 @@ enum DeviceStatus {
 }
 
 enum SubscriptionTier {
-  BASIC        // 3 staff included (GP, Nurse, Receptionist)
-  STANDARD     // 5 staff included
-  PREMIUM      // 10 staff included
-  ENTERPRISE   // Unlimited
+  STARTER        // 3 staff included
+  PROFESSIONAL   // 10 staff included
+  CUSTOM         // Custom staff limit (set by super admin)
 }
 
 // ==================== MODELS ====================
@@ -124,7 +123,7 @@ enum SubscriptionTier {
 model Practice {
   id            String   @id @default(cuid())
   name          String
-  odsCode       String   @unique // NHS ODS Code
+  odsCode       String   @unique // Practice Code
   email         String
   phone         String
   logo          String?
@@ -138,14 +137,23 @@ model Practice {
   country       String   @default("United Kingdom")
 
   // Subscription & Limits
-  subscriptionTier    SubscriptionTier @default(BASIC)
+  subscriptionTier    SubscriptionTier @default(STARTER)
   maxStaffIncluded    Int              @default(3)    // Staff included in plan
   extraStaffCount     Int              @default(0)    // Additional paid staff slots
   subscriptionStartDate DateTime?
   subscriptionEndDate   DateTime?
 
+  // Trial
+  isTrial             Boolean  @default(true)
+  trialEndsAt         DateTime?
+
   // Settings
   isActive      Boolean  @default(true)
+
+  // Billing access control
+  billingPin          String?
+  billingPinSetAt     DateTime?
+  billingPinSetById   String?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -166,6 +174,9 @@ model Practice {
   formSubmissions FormSubmission[]
   invoices      Invoice[]
   devices       Device[]
+  messageTemplates MessageTemplate[]
+  messageLogs      MessageLog[]
+  notifications    Notification[]
 
   @@map("practices")
 }
@@ -312,6 +323,10 @@ model User {
   nmcNumber   String?   // For nurses
   isActive    Boolean   @default(true)
 
+  // Password reset
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   lastLoginAt DateTime?
@@ -331,6 +346,8 @@ model User {
   createdInvoices   Invoice[]       @relation("CreatedInvoices")
   approvedDevices   Device[]        @relation("DeviceApprover")
   deviceLastUsedBy  Device[]        @relation("DeviceLastUser")
+  sentMessages      MessageLog[]    @relation("SentMessages")
+  notifications     Notification[]  @relation("UserNotifications")
 
   @@map("users")
 }
@@ -354,7 +371,7 @@ model WorkingHours {
 model Patient {
   id                  String        @id @default(cuid())
   practiceId          String
-  nhsNumber           String?       @unique
+  patientNumber       String?       @unique
   title               String?
   firstName           String
   lastName            String
@@ -401,9 +418,10 @@ model Patient {
   notes               Note[]
   formSubmissions     FormSubmission[]
   invoices            Invoice[]
+  messageLogs         MessageLog[]
 
   @@index([practiceId, lastName, firstName])
-  @@index([nhsNumber])
+  @@index([patientNumber])
   @@map("patients")
 }
 
@@ -471,6 +489,7 @@ model Appointment {
   consultation    Consultation?
   clinicalNotes   Note[]
   invoices        Invoice[]
+  messageLogs     MessageLog[]
 
   @@index([practiceId, scheduledStart])
   @@index([clinicianId, scheduledStart])
@@ -801,4 +820,108 @@ model InvoiceItem {
   invoice       Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_items")
+}
+
+// ==================== MESSAGING & NOTIFICATIONS ====================
+
+enum MessageChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum NotificationType {
+  APPOINTMENT_BOOKED
+  APPOINTMENT_REMINDER
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_RESCHEDULED
+  MESSAGE_FROM_PRACTICE
+  INVOICE_SENT
+  SYSTEM
+}
+
+model MessageTemplate {
+  id          String           @id @default(cuid())
+  practiceId  String
+  name        String
+  channel     MessageChannel
+  type        NotificationType
+  subject     String?
+  body        String
+  isDefault   Boolean          @default(false)
+  isActive    Boolean          @default(true)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  practice    Practice         @relation(fields: [practiceId], references: [id])
+  messages    MessageLog[]
+
+  @@unique([practiceId, type, channel])
+  @@index([practiceId])
+  @@map("message_templates")
+}
+
+model MessageLog {
+  id            String          @id @default(cuid())
+  practiceId    String
+  patientId     String
+  templateId    String?
+  sentById      String?
+
+  channel       MessageChannel
+  recipient     String
+  subject       String?
+  body          String
+  status        MessageStatus   @default(PENDING)
+  statusDetail  String?
+  externalId    String?
+
+  appointmentId String?
+
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  practice      Practice        @relation(fields: [practiceId], references: [id])
+  patient       Patient         @relation(fields: [patientId], references: [id])
+  template      MessageTemplate? @relation(fields: [templateId], references: [id])
+  sentBy        User?           @relation("SentMessages", fields: [sentById], references: [id])
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id])
+
+  @@index([practiceId, createdAt])
+  @@index([patientId])
+  @@index([appointmentId])
+  @@map("message_logs")
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  practiceId  String
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+
+  createdAt   DateTime          @default(now())
+
+  practice    Practice          @relation(fields: [practiceId], references: [id])
+  user        User              @relation("UserNotifications", fields: [userId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@index([practiceId, createdAt])
+  @@map("notifications")
 }

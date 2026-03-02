@@ -19,7 +19,7 @@ export class OnboardingService {
     practiceName: string;
     practiceEmail: string;
     practicePhone: string;
-    odsCode: string; // NHS ODS Code - required for UK practices
+    odsCode: string; // Practice Code
     addressLine1: string;
     addressLine2?: string;
     city: string;
@@ -60,7 +60,10 @@ export class OnboardingService {
 
     // Create everything in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Create the practice
+      // 1. Create the practice with 2-day trial
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 2); // 2-day trial
+
       const practice = await tx.practice.create({
         data: {
           name: data.practiceName,
@@ -72,10 +75,13 @@ export class OnboardingService {
           city: data.city,
           county: data.county,
           postcode: data.postcode,
-          subscriptionTier: SubscriptionTier.BASIC,
+          subscriptionTier: SubscriptionTier.STARTER,
           maxStaffIncluded: 3,
           extraStaffCount: 0,
           isActive: true,
+          isTrial: true,
+          trialEndsAt,
+          subscriptionStartDate: new Date(),
         },
       });
 

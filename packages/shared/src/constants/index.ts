@@ -61,7 +61,7 @@ export const APPOINTMENT_TYPE_CONFIG: Record<
     allowedRoles: [UserRole.HCA, UserRole.NURSE],
   },
   [AppointmentType.HCA_HEALTH_CHECK]: {
-    label: 'NHS Health Check',
+    label: 'Health Check',
     code: 'HCA02',
     defaultDuration: 20,
     color: '#D97706', // darker amber
@@ -143,7 +143,7 @@ export const DEFAULT_OPENING_HOURS = [
 
 // Validation constants
 export const VALIDATION = {
-  NHS_NUMBER_LENGTH: 10,
+  PATIENT_NUMBER_MAX_LENGTH: 20,
   POSTCODE_REGEX: /^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i,
   PHONE_REGEX: /^(\+44|0)[0-9]{10,11}$/,
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,

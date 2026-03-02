@@ -72,40 +72,19 @@ export function formatStaffName(staff: {
 }
 
 /**
- * Validate NHS Number using Modulus 11 check
+ * Validate Patient Number (digits only, up to 20 chars)
  */
-export function validateNhsNumber(nhsNumber: string): boolean {
-  // Remove spaces and check length
-  const cleaned = nhsNumber.replace(/\s/g, '');
-  if (cleaned.length !== VALIDATION.NHS_NUMBER_LENGTH) return false;
-  if (!/^\d+$/.test(cleaned)) return false;
-
-  // Modulus 11 check
-  const digits = cleaned.split('').map(Number);
-  const weights = [10, 9, 8, 7, 6, 5, 4, 3, 2];
-
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += digits[i] * weights[i];
-  }
-
-  const remainder = sum % 11;
-  const checkDigit = 11 - remainder;
-
-  // Check digit of 11 becomes 0, 10 is invalid
-  if (checkDigit === 10) return false;
-  const expectedCheckDigit = checkDigit === 11 ? 0 : checkDigit;
-
-  return digits[9] === expectedCheckDigit;
+export function validatePatientNumber(patientNumber: string): boolean {
+  const cleaned = patientNumber.replace(/\s/g, '');
+  if (cleaned.length === 0 || cleaned.length > 20) return false;
+  return /^\d+$/.test(cleaned);
 }
 
 /**
- * Format NHS Number with spaces (XXX XXX XXXX)
+ * Format Patient Number for display
  */
-export function formatNhsNumber(nhsNumber: string): string {
-  const cleaned = nhsNumber.replace(/\s/g, '');
-  if (cleaned.length !== 10) return nhsNumber;
-  return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+export function formatPatientNumber(patientNumber: string): string {
+  return patientNumber;
 }
 
 /**

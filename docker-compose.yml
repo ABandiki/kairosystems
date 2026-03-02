@@ -12,8 +12,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-kairo}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Port 5432 NOT exposed externally - only accessible via Docker network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kairo} -d ${POSTGRES_DB:-kairo}"]
       interval: 10s
@@ -36,8 +35,21 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-    ports:
-      - "3001:3001"
+      # Email (SMTP) configuration
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Kairo}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      # SMS (Twilio) configuration
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    # Port 3001 NOT exposed externally - only accessible via Nginx reverse proxy
+    expose:
+      - "3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,8 +70,9 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-your-nextauth-secret-change-in-production}
-    ports:
-      - "3000:3000"
+    # Port 3000 NOT exposed externally - only accessible via Nginx reverse proxy
+    expose:
+      - "3000"
     depends_on:
       - api
     networks:
