@@ -6,9 +6,9 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 
-# Copy everything and install
+# Copy everything and install with hoisted node_modules
 COPY . .
-RUN pnpm install
+RUN pnpm install --shamefully-hoist
 
 # Generate Prisma client from the database package
 WORKDIR /app/packages/database
@@ -25,7 +25,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy root node_modules (includes all hoisted deps in .pnpm)
+# Copy hoisted node_modules (flat structure, no symlink issues)
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy the dist folder from the build
@@ -34,17 +34,11 @@ COPY --from=builder /app/apps/api/dist ./dist
 # Copy package.json
 COPY --from=builder /app/apps/api/package.json ./package.json
 
-# Copy Prisma schema for generation
+# Copy Prisma schema for runtime generation
 COPY --from=builder /app/packages/database/prisma ./prisma
 
 # Install prisma CLI for runtime generation
 RUN npm install -g prisma@5.22.0
-
-# Install security packages directly (avoiding workspace: protocol conflict)
-RUN cd /tmp && npm init -y && npm install helmet@7 @nestjs/throttler@5 && \
-    cp -r /tmp/node_modules/helmet /app/node_modules/helmet && \
-    cp -r /tmp/node_modules/@nestjs/throttler /app/node_modules/@nestjs/throttler && \
-    rm -rf /tmp/node_modules /tmp/package.json /tmp/package-lock.json
 
 # Create startup script that generates Prisma client then runs the app
 RUN echo '#!/bin/sh' > /app/start.sh && \
