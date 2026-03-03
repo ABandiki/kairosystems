@@ -1,9 +1,26 @@
-import { Controller, Post, Body, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+  Logger,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { SkipTrialCheck } from '../auth/decorators/skip-trial-check.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { SkipDeviceCheck } from '../auth/decorators/skip-device-check.decorator';
+import { DemoRequestsService } from './demo-requests.service';
 import { EmailService } from '../messaging/email.service';
 import { WhatsAppService } from '../messaging/whatsapp.service';
+import { DemoRequestStatus } from '@prisma/client';
 
 @ApiTags('demo-requests')
 @Controller('demo-requests')
@@ -12,9 +29,12 @@ export class DemoRequestsController {
   private readonly logger = new Logger(DemoRequestsController.name);
 
   constructor(
+    private readonly demoRequestsService: DemoRequestsService,
     private readonly emailService: EmailService,
     private readonly whatsAppService: WhatsAppService,
   ) {}
+
+  // ==================== PUBLIC ENDPOINT ====================
 
   @Post()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 per hour
@@ -33,6 +53,18 @@ export class DemoRequestsController {
     this.logger.log(
       `New demo request from ${data.name} (${data.email}) - ${data.practiceName}`,
     );
+
+    // Persist to database
+    const demoRequest = await this.demoRequestsService.create({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      practiceName: data.practiceName,
+      practiceSize: data.practiceSize,
+      message: data.message,
+    });
+
+    this.logger.log(`Demo request saved with ID: ${demoRequest.id}`);
 
     const results = { email: false, whatsapp: false };
 
@@ -82,5 +114,68 @@ export class DemoRequestsController {
       success: true,
       message: 'Demo request received. We will contact you within 24 hours.',
     };
+  }
+
+  // ==================== SUPER ADMIN ENDPOINTS ====================
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all demo requests (super admin)' })
+  async findAll(
+    @Query('status') status?: DemoRequestStatus,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.demoRequestsService.findAll({
+      status,
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
+
+  @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get demo request stats (super admin)' })
+  async getStats() {
+    return this.demoRequestsService.getStats();
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a single demo request (super admin)' })
+  async findById(@Param('id') id: string) {
+    return this.demoRequestsService.findById(id);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @SkipDeviceCheck()
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update demo request status/notes (super admin)' })
+  async update(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body()
+    data: {
+      status?: DemoRequestStatus;
+      notes?: string;
+    },
+  ) {
+    return this.demoRequestsService.update(id, {
+      ...data,
+      handledById: req.user?.sub || req.user?.id,
+    });
   }
 }

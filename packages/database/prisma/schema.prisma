@@ -111,6 +111,13 @@ enum DeviceStatus {
   REVOKED      // Access removed
 }
 
+enum DemoRequestStatus {
+  PENDING      // New request, not yet handled
+  CONTACTED    // Super admin has reached out
+  CONVERTED    // Became a paying practice
+  DECLINED     // Not interested / disqualified
+}
+
 enum SubscriptionTier {
   STARTER        // 3 staff included
   PROFESSIONAL   // 10 staff included
@@ -239,6 +246,9 @@ model SuperAdmin {
 
   // Activity log
   activityLogs  SuperAdminActivityLog[]
+
+  // Demo requests handled by this admin
+  handledDemoRequests DemoRequest[]
 
   @@map("super_admins")
 }
@@ -924,4 +934,28 @@ model Notification {
   @@index([userId, isRead, createdAt])
   @@index([practiceId, createdAt])
   @@map("notifications")
+}
+
+// Demo / trial requests from the public landing page
+model DemoRequest {
+  id            String             @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  practiceName  String?
+  practiceSize  String?            // e.g. "1-3", "4-10", "11+"
+  message       String?
+
+  // Lifecycle
+  status        DemoRequestStatus  @default(PENDING)
+  notes         String?            // Internal notes by super admin
+  handledById   String?            // Super admin who handled it
+  handledBy     SuperAdmin?        @relation(fields: [handledById], references: [id])
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@map("demo_requests")
 }

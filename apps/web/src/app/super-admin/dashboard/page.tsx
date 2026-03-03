@@ -28,6 +28,11 @@ import {
   AlertTriangle,
   X,
   ChevronDown,
+  Inbox,
+  Phone,
+  Mail,
+  MessageSquare,
+  Eye,
 } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -57,7 +62,16 @@ interface ActivityLog {
   superAdmin: { firstName: string; lastName: string; email: string };
 }
 
-type Tab = 'practices' | 'analytics' | 'revenue' | 'activity' | 'notifications';
+interface DemoRequest {
+  id: string; name: string; email: string; phone: string | null; practiceName: string | null;
+  practiceSize: string | null; message: string | null; status: string; notes: string | null;
+  handledById: string | null; createdAt: string; updatedAt: string;
+  handledBy: { id: string; firstName: string; lastName: string } | null;
+}
+
+interface DemoStats { total: number; pending: number; contacted: number; converted: number; declined: number; }
+
+type Tab = 'practices' | 'analytics' | 'revenue' | 'activity' | 'notifications' | 'demo-requests';
 
 function getTrialBadge(practice: Practice) {
   if (!practice.isTrial) return { label: 'Paid', className: 'border-green-500 text-green-400' };
@@ -119,6 +133,14 @@ export default function SuperAdminDashboard() {
   const [notifyTarget, setNotifyTarget] = useState<'all' | string>('all');
   const [isSendingNotification, setIsSendingNotification] = useState(false);
   const [notifyResult, setNotifyResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([]);
+  const [demoStats, setDemoStats] = useState<DemoStats | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoSearch, setDemoSearch] = useState('');
+  const [demoStatusFilter, setDemoStatusFilter] = useState<string>('');
+  const [selectedDemo, setSelectedDemo] = useState<DemoRequest | null>(null);
+  const [demoNotes, setDemoNotes] = useState('');
+  const [demoUpdating, setDemoUpdating] = useState(false);
 
   const getToken = () => localStorage.getItem('super_admin_token');
 
@@ -136,6 +158,7 @@ export default function SuperAdminDashboard() {
     if (activeTab === 'analytics' && !analytics) loadAnalytics(token);
     if (activeTab === 'revenue' && !revenue) loadRevenue(token);
     if (activeTab === 'activity' && activityLog.length === 0) loadActivityLog(token);
+    if (activeTab === 'demo-requests') loadDemoRequests(token);
   }, [activeTab]);
 
   const loadPractices = async (token: string) => {
@@ -163,6 +186,54 @@ export default function SuperAdminDashboard() {
     setActivityLoading(true);
     try { const res = await fetch(`${API_BASE_URL}/super-admin/activity-log?limit=200`, { headers: { Authorization: `Bearer ${token}` } }); if (res.ok) setActivityLog(await res.json()); }
     catch (err) { console.error(err); } finally { setActivityLoading(false); }
+  };
+
+  const loadDemoRequests = async (token: string) => {
+    setDemoLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: '100' });
+      if (demoStatusFilter) params.set('status', demoStatusFilter);
+      if (demoSearch) params.set('search', demoSearch);
+      const [listRes, statsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/demo-requests?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/demo-requests/stats`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (listRes.ok) { const json = await listRes.json(); setDemoRequests(json.data || []); }
+      if (statsRes.ok) setDemoStats(await statsRes.json());
+    } catch (err) { console.error(err); } finally { setDemoLoading(false); }
+  };
+
+  const handleDemoStatusUpdate = async (id: string, status: string) => {
+    const token = getToken(); if (!token) return;
+    setDemoUpdating(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/demo-requests/${id}`, {
+        method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes: demoNotes || undefined }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setDemoRequests(prev => prev.map(d => d.id === id ? updated : d));
+        if (selectedDemo?.id === id) setSelectedDemo(updated);
+        loadDemoRequests(token);
+      }
+    } catch (err) { console.error(err); } finally { setDemoUpdating(false); }
+  };
+
+  const handleDemoNotesSave = async (id: string) => {
+    const token = getToken(); if (!token) return;
+    setDemoUpdating(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/demo-requests/${id}`, {
+        method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: demoNotes }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setDemoRequests(prev => prev.map(d => d.id === id ? updated : d));
+        setSelectedDemo(updated);
+      }
+    } catch (err) { console.error(err); } finally { setDemoUpdating(false); }
   };
 
   const handleCreatePractice = async () => {
@@ -228,6 +299,7 @@ export default function SuperAdminDashboard() {
     { id: 'revenue', label: 'Revenue', icon: <DollarSign className="h-4 w-4" /> },
     { id: 'activity', label: 'Activity Log', icon: <Activity className="h-4 w-4" /> },
     { id: 'notifications', label: 'Notify', icon: <Bell className="h-4 w-4" /> },
+    { id: 'demo-requests', label: 'Demo Requests', icon: <Inbox className="h-4 w-4" /> },
   ];
 
   return (
@@ -532,6 +604,125 @@ export default function SuperAdminDashboard() {
             </Card>
           </div>
         )}
+
+        {/* DEMO REQUESTS */}
+        {activeTab === 'demo-requests' && (<>
+          {demoStats && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              {[
+                { l: 'Total Requests', v: demoStats.total, bg: 'bg-blue-500/20', ic: 'text-blue-400', icon: Inbox },
+                { l: 'Pending', v: demoStats.pending, bg: 'bg-amber-500/20', ic: 'text-amber-400', icon: Clock },
+                { l: 'Contacted', v: demoStats.contacted, bg: 'bg-blue-500/20', ic: 'text-blue-400', icon: Phone },
+                { l: 'Converted', v: demoStats.converted, bg: 'bg-green-500/20', ic: 'text-green-400', icon: CheckCircle },
+                { l: 'Declined', v: demoStats.declined, bg: 'bg-slate-500/20', ic: 'text-slate-400', icon: XCircle },
+              ].map((s, i) => (
+                <Card key={i} className="bg-slate-800 border-slate-700"><CardContent className="pt-6"><div className="flex items-center gap-4"><div className={`p-3 rounded-lg ${s.bg}`}><s.icon className={`h-6 w-6 ${s.ic}`} /></div><div><p className="text-2xl font-bold text-white">{s.v}</p><p className="text-sm text-slate-400">{s.l}</p></div></div></CardContent></Card>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card className="bg-slate-800 border-slate-700">
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div><CardTitle className="text-white">Demo Requests</CardTitle><CardDescription className="text-slate-400">Leads from the landing page</CardDescription></div>
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                    <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input placeholder="Search by name, email, practice..." value={demoSearch} onChange={e => setDemoSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { const t = getToken(); if (t) loadDemoRequests(t); } }} className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-500" /></div>
+                    <select value={demoStatusFilter} onChange={e => { setDemoStatusFilter(e.target.value); setTimeout(() => { const t = getToken(); if (t) loadDemoRequests(t); }, 0); }} className="bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 text-sm">
+                      <option value="">All Statuses</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="CONTACTED">Contacted</option>
+                      <option value="CONVERTED">Converted</option>
+                      <option value="DECLINED">Declined</option>
+                    </select>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {demoLoading ? <div className="space-y-3">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 bg-slate-700" />)}</div>
+                  : demoRequests.length === 0 ? <div className="text-center py-12"><Inbox className="h-12 w-12 text-slate-600 mx-auto mb-3" /><p className="text-slate-400">No demo requests yet</p></div>
+                  : <div className="space-y-2">
+                      {demoRequests.map(req => {
+                        const statusBadge: Record<string, string> = {
+                          PENDING: 'border-amber-500 text-amber-400 bg-amber-500/10',
+                          CONTACTED: 'border-blue-500 text-blue-400 bg-blue-500/10',
+                          CONVERTED: 'border-green-500 text-green-400 bg-green-500/10',
+                          DECLINED: 'border-slate-500 text-slate-400 bg-slate-500/10',
+                        };
+                        return (
+                          <div key={req.id} onClick={() => { setSelectedDemo(req); setDemoNotes(req.notes || ''); }}
+                            className={`p-4 rounded-lg cursor-pointer transition-colors ${selectedDemo?.id === req.id ? 'bg-slate-600 ring-1 ring-amber-500' : 'bg-slate-700/50 hover:bg-slate-700'}`}>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-medium text-white">{req.name}</h3>
+                                  <Badge variant="outline" className={statusBadge[req.status] || 'border-slate-500 text-slate-400'}>{req.status}</Badge>
+                                </div>
+                                <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
+                                  <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{req.email}</span>
+                                  {req.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{req.phone}</span>}
+                                </div>
+                                {req.practiceName && <p className="text-sm text-slate-400 mt-1"><Building2 className="h-3 w-3 inline mr-1" />{req.practiceName}{req.practiceSize ? ` (${req.practiceSize})` : ''}</p>}
+                              </div>
+                              <span className="text-xs text-slate-500 whitespace-nowrap">{new Date(req.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              {selectedDemo ? (
+                <Card className="bg-slate-800 border-slate-700 sticky top-4">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-white text-base flex items-center gap-2"><Eye className="h-4 w-4 text-amber-400" />Request Details</CardTitle>
+                      <button onClick={() => setSelectedDemo(null)} className="text-slate-400 hover:text-white"><X className="h-4 w-4" /></button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div><label className="text-xs text-slate-500">Name</label><p className="text-sm text-white">{selectedDemo.name}</p></div>
+                      <div><label className="text-xs text-slate-500">Email</label><p className="text-sm text-white"><a href={`mailto:${selectedDemo.email}`} className="text-blue-400 hover:underline">{selectedDemo.email}</a></p></div>
+                      {selectedDemo.phone && <div><label className="text-xs text-slate-500">Phone</label><p className="text-sm text-white"><a href={`tel:${selectedDemo.phone}`} className="text-blue-400 hover:underline">{selectedDemo.phone}</a></p></div>}
+                      {selectedDemo.practiceName && <div><label className="text-xs text-slate-500">Practice</label><p className="text-sm text-white">{selectedDemo.practiceName}</p></div>}
+                      {selectedDemo.practiceSize && <div><label className="text-xs text-slate-500">Practice Size</label><p className="text-sm text-white">{selectedDemo.practiceSize}</p></div>}
+                      {selectedDemo.message && <div><label className="text-xs text-slate-500">Message</label><p className="text-sm text-white bg-slate-700/50 p-3 rounded-lg">{selectedDemo.message}</p></div>}
+                      <div><label className="text-xs text-slate-500">Submitted</label><p className="text-sm text-white">{new Date(selectedDemo.createdAt).toLocaleString()}</p></div>
+                      {selectedDemo.handledBy && <div><label className="text-xs text-slate-500">Handled by</label><p className="text-sm text-white">{selectedDemo.handledBy.firstName} {selectedDemo.handledBy.lastName}</p></div>}
+                    </div>
+
+                    <div className="border-t border-slate-700 pt-4">
+                      <label className="text-xs text-slate-500 block mb-2">Internal Notes</label>
+                      <textarea value={demoNotes} onChange={e => setDemoNotes(e.target.value)} rows={3} className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 text-sm resize-none" placeholder="Add notes about this lead..." />
+                      <Button onClick={() => handleDemoNotesSave(selectedDemo.id)} disabled={demoUpdating} size="sm" variant="outline" className="mt-2 border-slate-600 text-slate-300 hover:bg-slate-700 w-full">{demoUpdating ? 'Saving...' : 'Save Notes'}</Button>
+                    </div>
+
+                    <div className="border-t border-slate-700 pt-4 space-y-2">
+                      <label className="text-xs text-slate-500 block">Update Status</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedDemo.status !== 'CONTACTED' && <Button onClick={() => handleDemoStatusUpdate(selectedDemo.id, 'CONTACTED')} disabled={demoUpdating} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white"><Phone className="h-3 w-3 mr-1" />Contacted</Button>}
+                        {selectedDemo.status !== 'CONVERTED' && <Button onClick={() => handleDemoStatusUpdate(selectedDemo.id, 'CONVERTED')} disabled={demoUpdating} size="sm" className="bg-green-600 hover:bg-green-700 text-white"><CheckCircle className="h-3 w-3 mr-1" />Converted</Button>}
+                        {selectedDemo.status !== 'DECLINED' && <Button onClick={() => handleDemoStatusUpdate(selectedDemo.id, 'DECLINED')} disabled={demoUpdating} size="sm" variant="outline" className="border-slate-600 text-slate-400 hover:bg-slate-700"><XCircle className="h-3 w-3 mr-1" />Decline</Button>}
+                        {selectedDemo.status !== 'PENDING' && <Button onClick={() => handleDemoStatusUpdate(selectedDemo.id, 'PENDING')} disabled={demoUpdating} size="sm" variant="outline" className="border-slate-600 text-slate-400 hover:bg-slate-700"><Clock className="h-3 w-3 mr-1" />Reset</Button>}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8"><MessageSquare className="h-12 w-12 text-slate-600 mx-auto mb-3" /><p className="text-slate-400 text-sm">Select a request to view details</p></div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </>)}
       </main>
     </div>
   );
