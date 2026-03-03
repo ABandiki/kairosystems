@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipDeviceCheck } from '../auth/decorators/skip-device-check.decorator';
 import { SuperAdminService } from './super-admin.service';
+import { CreatePracticeDto } from './dto/create-practice.dto';
 
 @ApiTags('super-admin')
 @Controller('super-admin')
@@ -92,7 +93,7 @@ export class SuperAdminController {
   @SkipDeviceCheck()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new practice' })
-  async createPractice(@Req() req: any, @Body() data: any) {
+  async createPractice(@Req() req: any, @Body() data: CreatePracticeDto) {
     return this.superAdminService.createPractice(req.user.sub, data);
   }
 

@@ -15,6 +15,12 @@ import { PracticesService } from './practices.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { SKIP_TRIAL_CHECK_KEY } from '../auth/guards/trial.guard';
+import { UpdatePracticeDto } from './dto/update-practice.dto';
+import { UpdateOpeningHoursDto } from './dto/update-opening-hours.dto';
+import { CreatePharmacyDto } from './dto/create-pharmacy.dto';
+import { CreateRoomDto } from './dto/create-room.dto';
+import { CreateAppointmentTypeDto } from './dto/create-appointment-type.dto';
+import { UpdateAppointmentTypeDto } from './dto/update-appointment-type.dto';
 
 @ApiTags('practices')
 @Controller('practices')
@@ -69,16 +75,16 @@ export class PracticesController {
 
   @Put('current')
   @ApiOperation({ summary: 'Update current practice details' })
-  async updateCurrent(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async updateCurrent(@Req() req: AuthenticatedRequest, @Body() data: UpdatePracticeDto) {
     return this.practicesService.update(req.user.practiceId, data);
   }
 
   @Put('current/opening-hours')
   @ApiOperation({ summary: 'Update practice opening hours' })
-  async updateOpeningHours(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async updateOpeningHours(@Req() req: AuthenticatedRequest, @Body() data: UpdateOpeningHoursDto) {
     return this.practicesService.updateOpeningHours(
       req.user.practiceId,
-      data.openingHours,
+      data.hours,
     );
   }
 
@@ -90,7 +96,7 @@ export class PracticesController {
 
   @Post('current/pharmacies')
   @ApiOperation({ summary: 'Add a pharmacy' })
-  async createPharmacy(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async createPharmacy(@Req() req: AuthenticatedRequest, @Body() data: CreatePharmacyDto) {
     return this.practicesService.createPharmacy(req.user.practiceId, data);
   }
 
@@ -102,7 +108,7 @@ export class PracticesController {
 
   @Post('current/rooms')
   @ApiOperation({ summary: 'Add a room' })
-  async createRoom(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async createRoom(@Req() req: AuthenticatedRequest, @Body() data: CreateRoomDto) {
     return this.practicesService.createRoom(req.user.practiceId, data);
   }
 
@@ -114,7 +120,7 @@ export class PracticesController {
 
   @Post('current/appointment-types')
   @ApiOperation({ summary: 'Create appointment type settings' })
-  async createAppointmentType(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async createAppointmentType(@Req() req: AuthenticatedRequest, @Body() data: CreateAppointmentTypeDto) {
     return this.practicesService.createAppointmentType(req.user.practiceId, data);
   }
 
@@ -123,7 +129,7 @@ export class PracticesController {
   async updateAppointmentType(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateAppointmentTypeDto,
   ) {
     return this.practicesService.updateAppointmentType(
       id,

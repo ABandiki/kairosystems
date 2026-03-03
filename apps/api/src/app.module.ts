@@ -32,7 +32,7 @@ import { TrialGuard } from './modules/auth/guards/trial.guard';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 100,
+      limit: 60,
     }]),
     PrismaModule,
     AuthModule,

@@ -14,6 +14,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { NotesService } from './notes.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import { CreateNoteDto } from './dto/create-note.dto';
+import { UpdateNoteDto } from './dto/update-note.dto';
 
 @ApiTags('notes')
 @Controller('notes')
@@ -54,7 +56,7 @@ export class NotesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new note' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateNoteDto) {
     return this.notesService.create(req.user.practiceId, req.user.sub, data);
   }
 
@@ -63,7 +65,7 @@ export class NotesController {
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateNoteDto,
   ) {
     return this.notesService.update(id, req.user.practiceId, data);
   }

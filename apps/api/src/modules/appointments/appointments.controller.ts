@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AppointmentsService } from './appointments.service';
 import { AppointmentStatus } from '@prisma/client';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
 
 @ApiTags('appointments')
 @Controller('appointments')
@@ -60,7 +61,7 @@ export class AppointmentsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new appointment' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateAppointmentDto) {
     return this.appointmentsService.create(req.user.practiceId, data);
   }
 

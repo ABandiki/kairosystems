@@ -54,7 +54,7 @@ export class PracticesService {
       dayOfWeek: number;
       openTime: string;
       closeTime: string;
-      isClosed: boolean;
+      isClosed?: boolean;
     }>,
   ) {
     // Delete existing and create new
@@ -65,6 +65,7 @@ export class PracticesService {
         data: openingHours.map((oh) => ({
           practiceId: id,
           ...oh,
+          isClosed: oh.isClosed ?? false,
         })),
       });
     }

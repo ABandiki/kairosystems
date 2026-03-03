@@ -13,6 +13,8 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { DocumentsService } from './documents.service';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { UpdateDocumentDto } from './dto/update-document.dto';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('documents')
@@ -63,7 +65,7 @@ export class DocumentsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new document record (metadata only)' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateDocumentDto) {
     return this.documentsService.create(
       req.user.practiceId,
       req.user.sub,
@@ -76,7 +78,7 @@ export class DocumentsController {
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateDocumentDto,
   ) {
     return this.documentsService.update(id, req.user.practiceId, data);
   }

@@ -20,6 +20,8 @@ import { RequireTier } from '../auth/decorators/tier.decorator';
 import { InvoicesService } from './invoices.service';
 import { BillingPinService } from './billing-pin.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -146,7 +148,7 @@ export class InvoicesController {
   @UseGuards(RolesGuard)
   @Roles('PRACTICE_ADMIN', 'PRACTICE_MANAGER', 'RECEPTIONIST')
   @ApiOperation({ summary: 'Create a new invoice' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateInvoiceDto) {
     return this.invoicesService.create(req.user.practiceId, req.user.sub, data);
   }
 
@@ -157,7 +159,7 @@ export class InvoicesController {
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateInvoiceDto,
   ) {
     return this.invoicesService.update(id, req.user.practiceId, data);
   }

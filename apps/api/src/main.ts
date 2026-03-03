@@ -3,24 +3,44 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { validateEnv } from './config/env.validation';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
+  // Validate environment variables before anything else
+  validateEnv();
+
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Security headers
-  app.use(helmet());
+  // Security headers (enhanced)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Handled by nginx in production
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // Enable CORS
+  // CORS — strict origin in production
+  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Fingerprint'],
   });
 
-  // Global validation pipe
+  // Global exception filter — sanitizes errors in production
+  app.useGlobalFilters(new GlobalExceptionFilter());
+
+  // Global audit logging interceptor
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // Global validation pipe — rejects unknown/invalid fields
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -32,7 +52,7 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger documentation - only in development
+  // Swagger documentation — only in development
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('Kairo API')
@@ -56,6 +76,7 @@ async function bootstrap() {
   await app.listen(port);
 
   logger.log(`API running on port ${port}`);
+  logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
 bootstrap();

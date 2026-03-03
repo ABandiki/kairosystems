@@ -302,7 +302,7 @@ export class StaffService {
       startTime: string;
       endTime: string;
       roomId?: string;
-      isActive: boolean;
+      isActive?: boolean;
     }>,
   ) {
     await this.findById(id, practiceId);
@@ -315,6 +315,7 @@ export class StaffService {
         data: workingHours.map((wh) => ({
           userId: id,
           ...wh,
+          isActive: wh.isActive ?? true,
         })),
       });
     }

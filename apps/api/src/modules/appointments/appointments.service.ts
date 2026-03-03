@@ -112,7 +112,8 @@ export class AppointmentsService {
       patientId: string;
       clinicianId: string;
       appointmentType: any;
-      scheduledStart: Date;
+      scheduledStart: string | Date;
+      scheduledEnd?: string | Date;
       duration: number;
       reason?: string;
       notes?: string;
@@ -120,6 +121,7 @@ export class AppointmentsService {
       roomId?: string;
     },
   ) {
+    const startDate = new Date(data.scheduledStart);
     const scheduledEnd = new Date(data.scheduledStart);
     scheduledEnd.setMinutes(scheduledEnd.getMinutes() + data.duration);
 
@@ -127,7 +129,7 @@ export class AppointmentsService {
     const conflict = await this.checkConflicts(
       practiceId,
       data.clinicianId,
-      data.scheduledStart,
+      startDate,
       scheduledEnd,
     );
 
@@ -142,7 +144,7 @@ export class AppointmentsService {
         patientId: data.patientId,
         clinicianId: data.clinicianId,
         appointmentType: data.appointmentType,
-        scheduledStart: data.scheduledStart,
+        scheduledStart: startDate,
         scheduledEnd,
         duration: data.duration,
         reason: data.reason,

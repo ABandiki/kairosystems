@@ -15,6 +15,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TierGuard } from '../auth/guards/tier.guard';
 import { RequireTier } from '../auth/decorators/tier.decorator';
 import { FormSubmissionsService } from './form-submissions.service';
+import { CreateFormSubmissionDto } from './dto/create-form-submission.dto';
+import { UpdateFormSubmissionDto } from './dto/update-form-submission.dto';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('form-submissions')
@@ -95,7 +97,7 @@ export class FormSubmissionsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new form submission' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateFormSubmissionDto) {
     return this.formSubmissionsService.create(
       req.user.practiceId,
       req.user.sub,
@@ -108,7 +110,7 @@ export class FormSubmissionsController {
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateFormSubmissionDto,
   ) {
     return this.formSubmissionsService.update(id, req.user.practiceId, data);
   }

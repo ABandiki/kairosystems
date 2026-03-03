@@ -13,6 +13,10 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PatientsService } from './patients.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import { CreatePatientDto } from './dto/create-patient.dto';
+import { UpdatePatientDto } from './dto/update-patient.dto';
+import { CreatePatientAlertDto } from './dto/create-patient-alert.dto';
+import { UpdateMedicalHistoryDto } from './dto/update-medical-history.dto';
 
 @ApiTags('patients')
 @Controller('patients')
@@ -59,19 +63,19 @@ export class PatientsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new patient' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreatePatientDto) {
     return this.patientsService.create(req.user.practiceId, data);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update patient details' })
-  async update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: any) {
+  async update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: UpdatePatientDto) {
     return this.patientsService.update(id, req.user.practiceId, data);
   }
 
   @Post(':id/alerts')
   @ApiOperation({ summary: 'Add alert to patient' })
-  async addAlert(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: any) {
+  async addAlert(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: CreatePatientAlertDto) {
     return this.patientsService.addAlert(id, req.user.practiceId, data);
   }
 
@@ -86,7 +90,7 @@ export class PatientsController {
   async updateMedicalHistory(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateMedicalHistoryDto,
   ) {
     return this.patientsService.updateMedicalHistory(id, req.user.practiceId, data);
   }

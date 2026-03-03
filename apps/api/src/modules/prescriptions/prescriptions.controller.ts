@@ -13,6 +13,8 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PrescriptionsService } from './prescriptions.service';
+import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('prescriptions')
@@ -66,7 +68,7 @@ export class PrescriptionsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new prescription' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreatePrescriptionDto) {
     return this.prescriptionsService.create(
       req.user.practiceId,
       req.user.sub,
@@ -79,7 +81,7 @@ export class PrescriptionsController {
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdatePrescriptionDto,
   ) {
     return this.prescriptionsService.update(id, req.user.practiceId, data);
   }

@@ -15,6 +15,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { TierGuard } from '../auth/guards/tier.guard';
 import { RequireTier } from '../auth/decorators/tier.decorator';
 import { FormTemplatesService } from './form-templates.service';
+import { CreateFormTemplateDto } from './dto/create-form-template.dto';
+import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('form-templates')
@@ -57,7 +59,7 @@ export class FormTemplatesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new form template' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateFormTemplateDto) {
     return this.formTemplatesService.create(req.user.practiceId, req.user.sub, data);
   }
 
@@ -66,7 +68,7 @@ export class FormTemplatesController {
   async update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateFormTemplateDto,
   ) {
     return this.formTemplatesService.update(id, req.user.practiceId, data);
   }

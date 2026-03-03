@@ -115,9 +115,9 @@ export class PatientsService {
 
   async create(
     practiceId: string,
-    data: Prisma.PatientCreateInput & { practiceId?: string },
+    data: Record<string, any>,
   ) {
-    const { practiceId: _, dateOfBirth, ...patientData } = data as any;
+    const { practiceId: _, dateOfBirth, ...patientData } = data;
 
     // Convert dateOfBirth to ISO DateTime if it's a date-only string
     let parsedDateOfBirth = dateOfBirth;
@@ -132,11 +132,11 @@ export class PatientsService {
         ...patientData,
         dateOfBirth: parsedDateOfBirth,
         practice: { connect: { id: practiceId } },
-      },
+      } as any,
     });
   }
 
-  async update(id: string, practiceId: string, data: Prisma.PatientUpdateInput) {
+  async update(id: string, practiceId: string, data: Record<string, any>) {
     const patient = await this.findById(id, practiceId);
     return this.prisma.patient.update({
       where: { id: patient.id },

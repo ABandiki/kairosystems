@@ -12,6 +12,9 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { StaffService } from './staff.service';
+import { CreateStaffDto } from './dto/create-staff.dto';
+import { UpdateStaffDto } from './dto/update-staff.dto';
+import { UpdateWorkingHoursDto } from './dto/update-working-hours.dto';
 import { UserRole } from '@prisma/client';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
@@ -49,13 +52,13 @@ export class StaffController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new staff member' })
-  async create(@Req() req: AuthenticatedRequest, @Body() data: any) {
+  async create(@Req() req: AuthenticatedRequest, @Body() data: CreateStaffDto) {
     return this.staffService.create(req.user.practiceId, data);
   }
 
   @Put(':id')
   @ApiOperation({ summary: 'Update staff member details' })
-  async update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: any) {
+  async update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: UpdateStaffDto) {
     return this.staffService.update(id, req.user.practiceId, data);
   }
 
@@ -64,9 +67,9 @@ export class StaffController {
   async updateWorkingHours(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: any,
+    @Body() data: UpdateWorkingHoursDto,
   ) {
-    return this.staffService.updateWorkingHours(id, req.user.practiceId, data.workingHours);
+    return this.staffService.updateWorkingHours(id, req.user.practiceId, data.hours);
   }
 
   @Put(':id/signature')
