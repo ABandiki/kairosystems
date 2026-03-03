@@ -51,6 +51,7 @@ scripts/login-payload.json
 
 # Security documents
 SECURITY-AUDIT-AND-LOGINS.md
+CREDENTIALS.md
 
 # OS
 Thumbs.db
