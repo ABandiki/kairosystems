@@ -15,6 +15,7 @@ import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { UpdateWorkingHoursDto } from './dto/update-working-hours.dto';
+import { UpdateSignatureDto } from './dto/update-signature.dto';
 import { UserRole } from '@prisma/client';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
@@ -77,7 +78,7 @@ export class StaffController {
   async updateSignature(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() data: { signature: string },
+    @Body() data: UpdateSignatureDto,
   ) {
     return this.staffService.updateSignature(id, req.user.practiceId, data.signature);
   }

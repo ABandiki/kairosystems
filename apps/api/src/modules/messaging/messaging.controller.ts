@@ -20,6 +20,9 @@ import { TemplateService } from './template.service';
 import { EmailService } from './email.service';
 import { SmsService } from './sms.service';
 import { WhatsAppService } from './whatsapp.service';
+import { SendMessageDto } from './dto/send-message.dto';
+import { CreateTemplateDto } from './dto/create-template.dto';
+import { UpdateTemplateDto } from './dto/update-template.dto';
 
 @ApiTags('messaging')
 @ApiBearerAuth()
@@ -37,13 +40,7 @@ export class MessagingController {
   @Post('send')
   async sendMessage(
     @Req() req: AuthenticatedRequest,
-    @Body()
-    body: {
-      patientId: string;
-      channel: 'EMAIL' | 'SMS' | 'WHATSAPP';
-      subject?: string;
-      body: string;
-    },
+    @Body() body: SendMessageDto,
   ) {
     return this.messagingService.sendCustomMessage(
       req.user.practiceId,
@@ -110,15 +107,7 @@ export class MessagingController {
   @Roles('PRACTICE_ADMIN', 'PRACTICE_MANAGER')
   async createTemplate(
     @Req() req: AuthenticatedRequest,
-    @Body()
-    body: {
-      name: string;
-      channel: string;
-      type: string;
-      subject?: string;
-      body: string;
-      isDefault?: boolean;
-    },
+    @Body() body: CreateTemplateDto,
   ) {
     return this.templateService.createTemplate(req.user.practiceId, body);
   }
@@ -129,15 +118,7 @@ export class MessagingController {
   async updateTemplate(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    body: Partial<{
-      name: string;
-      channel: string;
-      type: string;
-      subject: string;
-      body: string;
-      isDefault: boolean;
-    }>,
+    @Body() body: UpdateTemplateDto,
   ) {
     return this.templateService.updateTemplate(id, req.user.practiceId, body);
   }

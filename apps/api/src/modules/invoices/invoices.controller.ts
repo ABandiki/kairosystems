@@ -22,6 +22,7 @@ import { BillingPinService } from './billing-pin.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { BillingPinDto } from './dto/billing-pin.dto';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -50,7 +51,7 @@ export class InvoicesController {
   @ApiOperation({ summary: 'Verify billing PIN to unlock billing section' })
   async verifyBillingPin(
     @Req() req: AuthenticatedRequest,
-    @Body() body: { pin: string },
+    @Body() body: BillingPinDto,
   ) {
     const bypassRoles = ['PRACTICE_ADMIN', 'SUPER_ADMIN'];
     if (
@@ -75,7 +76,7 @@ export class InvoicesController {
   @ApiOperation({ summary: 'Set or update the billing PIN' })
   async setBillingPin(
     @Req() req: AuthenticatedRequest,
-    @Body() body: { pin: string },
+    @Body() body: BillingPinDto,
   ) {
     await this.billingPinService.setPin(
       req.user.practiceId,

@@ -15,6 +15,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { DevicesService } from './devices.service';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
+import { RegisterDeviceDto } from './dto/register-device.dto';
+import { RevokeDeviceDto } from './dto/revoke-device.dto';
 
 @ApiTags('devices')
 @Controller('devices')
@@ -34,11 +36,7 @@ export class DevicesController {
   @ApiOperation({ summary: 'Register a new device (pending approval)' })
   async registerDevice(
     @Req() req: AuthenticatedRequest,
-    @Body() data: {
-      deviceFingerprint: string;
-      deviceName: string;
-      deviceType: string;
-    },
+    @Body() data: RegisterDeviceDto,
   ) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] as string;
     const userAgent = req.headers['user-agent'];
@@ -70,7 +68,7 @@ export class DevicesController {
   async revokeDevice(
     @Req() req: AuthenticatedRequest,
     @Param('id') deviceId: string,
-    @Body() data: { reason?: string },
+    @Body() data: RevokeDeviceDto,
   ) {
     return this.devicesService.revokeDevice(
       deviceId,

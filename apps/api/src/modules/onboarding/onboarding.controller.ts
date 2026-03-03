@@ -10,6 +10,8 @@ import {
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { OnboardingService } from './onboarding.service';
+import { RegisterPracticeDto } from './dto/register-practice.dto';
+import { RequestDeviceDto } from './dto/request-device.dto';
 
 @ApiTags('onboarding')
 @Controller('onboarding')
@@ -20,24 +22,7 @@ export class OnboardingController {
   @Throttle({ default: { limit: 3, ttl: 3600000 } })
   @ApiOperation({ summary: 'Register a new practice with initial admin and device' })
   async registerPractice(
-    @Body() data: {
-      practiceName: string;
-      practiceEmail: string;
-      practicePhone: string;
-      odsCode: string;
-      addressLine1: string;
-      addressLine2?: string;
-      city: string;
-      county?: string;
-      postcode: string;
-      adminEmail: string;
-      adminPassword: string;
-      adminFirstName: string;
-      adminLastName: string;
-      deviceFingerprint: string;
-      deviceName: string;
-      deviceType: string;
-    },
+    @Body() data: RegisterPracticeDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
@@ -52,12 +37,7 @@ export class OnboardingController {
   @Throttle({ default: { limit: 5, ttl: 900000 } })
   @ApiOperation({ summary: 'Request device registration for an existing practice' })
   async requestDeviceRegistration(
-    @Body() data: {
-      practiceId: string;
-      deviceFingerprint: string;
-      deviceName: string;
-      deviceType: string;
-    },
+    @Body() data: RequestDeviceDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {

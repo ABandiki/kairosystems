@@ -14,8 +14,20 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { SkipDeviceCheck } from '../auth/decorators/skip-device-check.decorator';
+import { Throttle } from '@nestjs/throttler';
 import { SuperAdminService } from './super-admin.service';
 import { CreatePracticeDto } from './dto/create-practice.dto';
+import { SuperAdminLoginDto } from './dto/super-admin-login.dto';
+import { CreatePracticeAdminDto } from './dto/create-practice-admin.dto';
+import { CreatePracticeStaffDto } from './dto/create-practice-staff.dto';
+import { SendNotificationDto } from './dto/send-notification.dto';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { SetPracticeStatusDto } from './dto/set-practice-status.dto';
+import { BulkUpdateStatusDto } from './dto/bulk-update-status.dto';
+import { BulkExtendTrialsDto } from './dto/bulk-extend-trials.dto';
+import { RevokeDeviceDto } from './dto/revoke-device.dto';
+import { UpdateStaffMemberDto } from './dto/update-staff-member.dto';
+import { ResetStaffPasswordDto } from './dto/reset-staff-password.dto';
 
 @ApiTags('super-admin')
 @Controller('super-admin')
@@ -24,10 +36,11 @@ export class SuperAdminController {
 
   @Post('login')
   @SkipDeviceCheck()
+  @Throttle({ default: { limit: 5, ttl: 900000 } })
   @ApiOperation({ summary: 'Super admin login' })
   async login(
     @Req() req: any,
-    @Body() data: { email: string; password: string },
+    @Body() data: SuperAdminLoginDto,
   ) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'];
     return this.superAdminService.login(data.email, data.password, ipAddress);
@@ -106,13 +119,7 @@ export class SuperAdminController {
   async createPracticeAdmin(
     @Req() req: any,
     @Param('id') practiceId: string,
-    @Body() data: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
-      phone?: string;
-    },
+    @Body() data: CreatePracticeAdminDto,
   ) {
     return this.superAdminService.createPracticeAdmin(req.user.sub, practiceId, data);
   }
@@ -126,14 +133,7 @@ export class SuperAdminController {
   async createStaffMember(
     @Req() req: any,
     @Param('id') practiceId: string,
-    @Body() data: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
-      role: string;
-      phone?: string;
-    },
+    @Body() data: CreatePracticeStaffDto,
   ) {
     return this.superAdminService.createStaffMember(req.user.sub, practiceId, data);
   }
@@ -147,7 +147,7 @@ export class SuperAdminController {
   async sendPracticeNotification(
     @Req() req: any,
     @Param('id') practiceId: string,
-    @Body() data: { title: string; message: string },
+    @Body() data: SendNotificationDto,
   ) {
     return this.superAdminService.sendPracticeNotification(req.user.sub, practiceId, data);
   }
@@ -160,7 +160,7 @@ export class SuperAdminController {
   @ApiOperation({ summary: 'Broadcast notification to all practices' })
   async broadcastNotification(
     @Req() req: any,
-    @Body() data: { title: string; message: string },
+    @Body() data: SendNotificationDto,
   ) {
     return this.superAdminService.broadcastNotification(req.user.sub, data);
   }
@@ -174,15 +174,7 @@ export class SuperAdminController {
   async updateSubscription(
     @Req() req: any,
     @Param('id') practiceId: string,
-    @Body() data: {
-      subscriptionTier?: string;
-      maxStaffIncluded?: number;
-      extraStaffCount?: number;
-      subscriptionStartDate?: string;
-      subscriptionEndDate?: string;
-      isTrial?: boolean;
-      trialEndsAt?: string | null;
-    },
+    @Body() data: UpdateSubscriptionDto,
   ) {
     const processedData: any = { ...data };
     if (data.subscriptionStartDate) processedData.subscriptionStartDate = new Date(data.subscriptionStartDate);
@@ -206,7 +198,7 @@ export class SuperAdminController {
   async setPracticeStatus(
     @Req() req: any,
     @Param('id') practiceId: string,
-    @Body() data: { isActive: boolean },
+    @Body() data: SetPracticeStatusDto,
   ) {
     return this.superAdminService.setPracticeActive(
       req.user.sub,
@@ -223,7 +215,7 @@ export class SuperAdminController {
   @ApiOperation({ summary: 'Bulk activate/deactivate practices' })
   async bulkUpdateStatus(
     @Req() req: any,
-    @Body() data: { practiceIds: string[]; isActive: boolean },
+    @Body() data: BulkUpdateStatusDto,
   ) {
     return this.superAdminService.bulkUpdatePracticeStatus(
       req.user.sub,
@@ -240,7 +232,7 @@ export class SuperAdminController {
   @ApiOperation({ summary: 'Bulk extend trials' })
   async bulkExtendTrials(
     @Req() req: any,
-    @Body() data: { practiceIds: string[]; days: number },
+    @Body() data: BulkExtendTrialsDto,
   ) {
     return this.superAdminService.bulkExtendTrials(
       req.user.sub,
@@ -268,7 +260,7 @@ export class SuperAdminController {
   async revokeDevice(
     @Req() req: any,
     @Param('id') deviceId: string,
-    @Body() data: { reason?: string },
+    @Body() data: RevokeDeviceDto,
   ) {
     return this.superAdminService.revokeDevice(req.user.sub, deviceId, data.reason);
   }
@@ -282,14 +274,7 @@ export class SuperAdminController {
   async updateStaffMember(
     @Req() req: any,
     @Param('id') userId: string,
-    @Body() data: {
-      firstName?: string;
-      lastName?: string;
-      email?: string;
-      role?: string;
-      isActive?: boolean;
-      phone?: string;
-    },
+    @Body() data: UpdateStaffMemberDto,
   ) {
     return this.superAdminService.updateStaffMember(req.user.sub, userId, data);
   }
@@ -303,7 +288,7 @@ export class SuperAdminController {
   async resetStaffPassword(
     @Req() req: any,
     @Param('id') userId: string,
-    @Body() data: { password: string },
+    @Body() data: ResetStaffPasswordDto,
   ) {
     return this.superAdminService.resetStaffPassword(req.user.sub, userId, data.password);
   }

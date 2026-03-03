@@ -21,6 +21,8 @@ import { DemoRequestsService } from './demo-requests.service';
 import { EmailService } from '../messaging/email.service';
 import { WhatsAppService } from '../messaging/whatsapp.service';
 import { DemoRequestStatus } from '@prisma/client';
+import { SubmitDemoRequestDto } from './dto/submit-demo-request.dto';
+import { UpdateDemoRequestDto } from './dto/update-demo-request.dto';
 
 @ApiTags('demo-requests')
 @Controller('demo-requests')
@@ -40,15 +42,7 @@ export class DemoRequestsController {
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 per hour
   @ApiOperation({ summary: 'Submit a demo request from the landing page' })
   async submitDemoRequest(
-    @Body()
-    data: {
-      name: string;
-      email: string;
-      phone: string;
-      practiceName: string;
-      practiceSize?: string;
-      message?: string;
-    },
+    @Body() data: SubmitDemoRequestDto,
   ) {
     this.logger.log(
       `New demo request from ${data.name} (${data.email}) - ${data.practiceName}`,
@@ -167,11 +161,7 @@ export class DemoRequestsController {
   async update(
     @Param('id') id: string,
     @Req() req: any,
-    @Body()
-    data: {
-      status?: DemoRequestStatus;
-      notes?: string;
-    },
+    @Body() data: UpdateDemoRequestDto,
   ) {
     return this.demoRequestsService.update(id, {
       ...data,
