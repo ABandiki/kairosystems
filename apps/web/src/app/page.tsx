@@ -140,6 +140,13 @@ export default function LandingPage() {
                   'Staff Management',
                   'Analytics Dashboard',
                 ],
+                aggregateRating: {
+                  '@type': 'AggregateRating',
+                  ratingValue: '5.0',
+                  reviewCount: '3',
+                  bestRating: '5',
+                  worstRating: '1',
+                },
               },
               {
                 '@type': 'Organization',
@@ -168,13 +175,77 @@ export default function LandingPage() {
                 name: 'Kairo',
                 url: 'https://kairo.clinic',
               },
+              {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                  {
+                    '@type': 'ListItem',
+                    position: 1,
+                    name: 'Home',
+                    item: 'https://kairo.clinic',
+                  },
+                ],
+              },
+              {
+                '@type': 'FAQPage',
+                mainEntity: [
+                  {
+                    '@type': 'Question',
+                    name: 'What is Kairo?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Kairo is an all-in-one practice management platform built for private healthcare practices in Zimbabwe. It combines appointment scheduling, patient records, clinical notes (SOAP), billing, prescriptions, and WhatsApp notifications in one easy-to-use system.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'How long does it take to set up Kairo?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Kairo can be set up in under 10 minutes. There is no complex implementation required — simply create your account, add your practice details, and start seeing patients the same day.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'Is my patient data secure with Kairo?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Yes. Kairo uses end-to-end AES-256 encryption for all data in transit and at rest. We implement role-based access controls, maintain full audit trails, and comply with local healthcare data regulations including Zimbabwe data protection requirements.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'How do WhatsApp appointment reminders work?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Kairo integrates with WhatsApp to send automated appointment reminders and custom messages to your patients. This helps reduce no-shows and keeps patients engaged through Zimbabwe\'s most popular communication channel. WhatsApp & SMS notifications are available as an optional add-on for all plans.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'How much does Kairo cost?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Kairo offers two plans: Starter at $49/month (up to 3 staff, scheduling, records, clinical notes, email support) and Professional at $99/month (up to 10 staff, billing & invoicing, advanced analytics, and everything in Starter). Custom pricing is available for larger practices. All plans include a free 2-day trial.',
+                    },
+                  },
+                  {
+                    '@type': 'Question',
+                    name: 'Can I try Kairo before committing?',
+                    acceptedAnswer: {
+                      '@type': 'Answer',
+                      text: 'Yes. Kairo offers a free 2-day trial with no credit card required. You can explore all features and start managing your practice right away. If you need more time or a personalised walkthrough, you can also request a demo.',
+                    },
+                  },
+                ],
+              },
             ],
           }),
         }}
       />
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-lg z-50 border-b border-gray-100">
+      <nav role="navigation" aria-label="Main navigation" className="fixed top-0 w-full bg-white/80 backdrop-blur-lg z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -210,8 +281,9 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      <main>
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
+      <section aria-label="Hero" className="relative pt-32 pb-20 overflow-hidden">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-teal-50/80 via-white to-emerald-50/60" />
         <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-[#03989E]/5 rounded-full blur-3xl" />
@@ -493,7 +565,7 @@ export default function LandingPage() {
       </section>
 
       {/* Trusted By / Social Proof Bar */}
-      <section className="py-12 border-y border-gray-100 bg-gray-50/50">
+      <section aria-label="Trusted by healthcare professionals" className="py-12 border-y border-gray-100 bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-8">
             Trusted by healthcare practices
@@ -510,7 +582,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24">
+      <section id="features" aria-label="Features" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
@@ -598,7 +670,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-gradient-to-br from-gray-50 to-white">
+      <section id="how-it-works" aria-label="How it works" className="py-24 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
@@ -653,7 +725,7 @@ export default function LandingPage() {
       </section>
 
       {/* Feature Highlight - Split Section */}
-      <section className="py-24">
+      <section aria-label="Feature highlights" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Highlight 1 */}
           <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
@@ -791,7 +863,7 @@ export default function LandingPage() {
       </section>
 
       {/* Security & Compliance */}
-      <section id="security" className="py-24 bg-gray-900 text-white">
+      <section id="security" aria-label="Security and compliance" className="py-24 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-sm text-[#4CBD90] font-medium mb-4">
@@ -838,7 +910,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-24">
+      <section aria-label="Testimonials" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
@@ -893,7 +965,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 bg-gradient-to-br from-gray-50 to-white">
+      <section id="pricing" aria-label="Pricing plans" className="py-24 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
@@ -1041,8 +1113,61 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section id="faq" aria-label="Frequently asked questions" className="py-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
+              FAQ
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+              Frequently asked questions
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                question: 'What is Kairo?',
+                answer: 'Kairo is an all-in-one practice management platform built for private healthcare practices in Zimbabwe. It combines appointment scheduling, patient records, clinical notes (SOAP), billing, prescriptions, and WhatsApp notifications in one easy-to-use system.',
+              },
+              {
+                question: 'How long does it take to set up Kairo?',
+                answer: 'Kairo can be set up in under 10 minutes. There is no complex implementation required — simply create your account, add your practice details, and start seeing patients the same day.',
+              },
+              {
+                question: 'Is my patient data secure with Kairo?',
+                answer: 'Yes. Kairo uses end-to-end AES-256 encryption for all data in transit and at rest. We implement role-based access controls, maintain full audit trails, and comply with local healthcare data regulations including Zimbabwe data protection requirements.',
+              },
+              {
+                question: 'How do WhatsApp appointment reminders work?',
+                answer: 'Kairo integrates with WhatsApp to send automated appointment reminders and custom messages to your patients. This helps reduce no-shows and keeps patients engaged through Zimbabwe\'s most popular communication channel. WhatsApp & SMS notifications are available as an optional add-on for all plans.',
+              },
+              {
+                question: 'How much does Kairo cost?',
+                answer: 'Kairo offers two plans: Starter at $49/month (up to 3 staff, scheduling, records, clinical notes, email support) and Professional at $99/month (up to 10 staff, billing & invoicing, advanced analytics, and everything in Starter). Custom pricing is available for larger practices. All plans include a free 2-day trial.',
+              },
+              {
+                question: 'Can I try Kairo before committing?',
+                answer: 'Yes! Kairo offers a free 2-day trial with no credit card required. You can explore all features and start managing your practice right away. If you need more time or a personalised walkthrough, you can also request a demo.',
+              },
+            ].map((faq) => (
+              <details key={faq.question} className="group rounded-2xl border border-gray-200 bg-white">
+                <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-left text-base font-semibold text-gray-900 hover:text-[#03989E] transition-colors [&::-webkit-details-marker]:hidden list-none">
+                  {faq.question}
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-open:rotate-90 transition-transform flex-shrink-0 ml-4" />
+                </summary>
+                <div className="px-6 pb-5 text-gray-600 leading-relaxed">
+                  {faq.answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
-      <section className="py-24">
+      <section aria-label="Get started" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative rounded-3xl bg-gradient-to-br from-[#03989E] to-[#027A7F] p-12 sm:p-16 text-center overflow-hidden">
             {/* Background pattern */}
@@ -1075,8 +1200,10 @@ export default function LandingPage() {
         </div>
       </section>
 
+      </main>
+
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
+      <footer role="contentinfo" className="bg-gray-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12">
             <div>
@@ -1109,6 +1236,7 @@ export default function LandingPage() {
                 <li><a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#security" className="text-sm text-gray-400 hover:text-white transition-colors">Security</a></li>
                 <li><Link href="/legal" className="text-sm text-gray-400 hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link href="/blog" className="text-sm text-gray-400 hover:text-white transition-colors">Blog</Link></li>
               </ul>
             </div>
             <div>
