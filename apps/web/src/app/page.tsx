@@ -284,11 +284,13 @@ export default function LandingPage() {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-[68%_center] lg:object-center"
         />
-        {/* Legibility overlays — strong only near the bottom-left copy */}
-        <div className="absolute inset-y-0 left-0 w-full sm:w-3/5 bg-gradient-to-r from-white/60 to-transparent" aria-hidden="true" />
-        <div className="absolute inset-x-0 bottom-0 h-[30rem] sm:h-72 bg-gradient-to-t from-white via-white/60 to-transparent sm:from-white/90 sm:via-white/50" aria-hidden="true" />
+        {/* Legibility overlays — strong only near the bottom-left copy.
+            Three tiers: phones get a heavy bottom fade, tablets a medium one,
+            desktop the light editorial wash. */}
+        <div className="absolute inset-y-0 left-0 w-full lg:w-3/5 bg-gradient-to-r from-white/60 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 h-[30rem] md:h-80 lg:h-72 bg-gradient-to-t from-white via-white/60 to-transparent md:from-white/95 md:via-white/55 lg:from-white/90 lg:via-white/50" aria-hidden="true" />
 
         <div className="relative z-10 flex flex-col min-h-screen">
           <div className="flex-1 flex items-end pb-12 sm:pb-16 lg:pb-20 px-6 sm:px-12 md:px-20 lg:px-28">
@@ -358,8 +360,8 @@ export default function LandingPage() {
           className="object-cover"
         />
         {/* Legibility overlays — dark counterpart to the hero */}
-        <div className="absolute inset-y-0 left-0 w-full sm:w-3/5 bg-gradient-to-r from-black/75 to-transparent" aria-hidden="true" />
-        <div className="absolute inset-x-0 bottom-0 h-[28rem] sm:h-80 bg-gradient-to-t from-black/95 via-black/60 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-y-0 left-0 w-full lg:w-3/5 bg-gradient-to-r from-black/75 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 h-[28rem] md:h-96 lg:h-80 bg-gradient-to-t from-black/95 via-black/60 to-transparent" aria-hidden="true" />
 
         {/* Inset — remedies are identified leaf by leaf, name by name */}
         <div className="hidden lg:block absolute right-16 bottom-20 z-10 w-[280px] rounded-3xl overflow-hidden border border-white/20 shadow-2xl rotate-1">

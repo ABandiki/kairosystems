@@ -72,6 +72,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* Register the app service worker so browsers offer "Install Kairo".
+            Admin pages register their own SW with a narrower scope. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator && !location.pathname.startsWith('/super-admin')) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .catch(function(err) { console.log('SW registration failed:', err); });
+                });
+              }
+            `,
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
