@@ -1,7 +1,9 @@
 'use client';
 
-import { ShieldX, Mail, Phone, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { ShieldX, Mail, Phone, LogOut, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { billingApi } from '@/lib/api';
 
 function KairoLogo({ className = 'w-12 h-12' }: { className?: string }) {
   return (
@@ -24,6 +26,24 @@ function KairoLogo({ className = 'w-12 h-12' }: { className?: string }) {
 
 export function TrialExpiredScreen() {
   const router = useRouter();
+  const [subscribing, setSubscribing] = useState<'STARTER' | 'PROFESSIONAL' | null>(null);
+  const [checkoutError, setCheckoutError] = useState('');
+
+  const handleSubscribe = async (tier: 'STARTER' | 'PROFESSIONAL') => {
+    setCheckoutError('');
+    setSubscribing(tier);
+    try {
+      const { url } = await billingApi.createCheckout(tier);
+      window.location.href = url;
+    } catch (err) {
+      setCheckoutError(
+        err instanceof Error && err.message.includes('administrators')
+          ? 'Only your practice administrator can manage billing.'
+          : 'Could not start checkout — please use the contact options below.',
+      );
+      setSubscribing(null);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -52,8 +72,49 @@ export function TrialExpiredScreen() {
             Your free trial of Kairo has expired. To continue accessing your practice management system, please subscribe to a plan.
           </p>
 
+          {/* Self-serve subscribe */}
+          <div className="space-y-3 mb-6">
+            {checkoutError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                {checkoutError}
+              </p>
+            )}
+            <button
+              onClick={() => handleSubscribe('STARTER')}
+              disabled={subscribing !== null}
+              className="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-[#03989E] hover:shadow-sm transition-all disabled:opacity-60"
+            >
+              <span className="text-left">
+                <span className="block text-sm font-semibold text-gray-900">Starter</span>
+                <span className="block text-xs text-gray-500">Up to 3 staff members</span>
+              </span>
+              <span className="flex items-center gap-2 text-sm font-semibold text-[#03989E]">
+                {subscribing === 'STARTER' && <Loader2 className="w-4 h-4 animate-spin" />}
+                $49/mo
+              </span>
+            </button>
+            <button
+              onClick={() => handleSubscribe('PROFESSIONAL')}
+              disabled={subscribing !== null}
+              className="w-full flex items-center justify-between p-4 bg-[#03989E] rounded-xl hover:bg-[#027A7F] transition-all disabled:opacity-60"
+            >
+              <span className="text-left">
+                <span className="block text-sm font-semibold text-white">Professional</span>
+                <span className="block text-xs text-white/70">Up to 10 staff members</span>
+              </span>
+              <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                {subscribing === 'PROFESSIONAL' && <Loader2 className="w-4 h-4 animate-spin" />}
+                $99/mo
+              </span>
+            </button>
+            <p className="text-[11px] text-gray-400">
+              Secure payment by card via Stripe. Prefer EcoCash or bank transfer? Use the
+              contact options below.
+            </p>
+          </div>
+
           <div className="bg-gray-50 rounded-xl p-6 mb-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Contact us to subscribe:</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Or contact us to subscribe:</h3>
             <div className="space-y-3">
               <a
                 href="mailto:ashley@kairo.clinic"

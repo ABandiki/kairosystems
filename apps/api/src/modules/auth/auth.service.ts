@@ -2,9 +2,11 @@ import { Injectable, UnauthorizedException, ForbiddenException, BadRequestExcept
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -38,7 +40,55 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    return this.issueSession(user);
+  }
 
+  /**
+   * Sign in with a Google ID token (Google Identity Services).
+   * Only signs in EXISTING Kairo accounts matched by verified email —
+   * it never creates users, since accounts belong to a practice.
+   */
+  async googleLogin(dto: GoogleLoginDto) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      throw new BadRequestException('Google sign-in is not configured');
+    }
+
+    let payload;
+    try {
+      const client = new OAuth2Client(clientId);
+      const ticket = await client.verifyIdToken({
+        idToken: dto.credential,
+        audience: clientId,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Google sign-in failed. Please try again.');
+    }
+
+    if (!payload?.email || payload.email_verified !== true) {
+      throw new UnauthorizedException('Your Google account email is not verified.');
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: payload.email, mode: 'insensitive' },
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(
+        'No Kairo account is linked to this Google account. Ask your practice administrator to add you, or sign in with your email and password.',
+      );
+    }
+
+    const { password: _, ...safeUser } = user;
+    return this.issueSession(safeUser);
+  }
+
+  /** Shared session issuance: trial checks + JWT. Used by password and Google login. */
+  private async issueSession(user: any) {
     // Update last login
     await this.usersService.updateLastLogin(user.id);
 
@@ -66,12 +116,9 @@ export class AuthService {
           subscriptionTier: practice.subscriptionTier,
         };
 
-        // If trial expired, throw immediately so frontend can show lockout
-        if (trialExpired) {
-          throw new ForbiddenException(
-            'TRIAL_EXPIRED: Your free trial has ended. Please subscribe to continue using Kairo. Contact ashley@kairo.clinic or call +263 785 767 099.',
-          );
-        }
+        // Note: an expired trial still gets a session — the global TrialGuard
+        // blocks every route except billing/profile, so the user can subscribe.
+        // The frontend shows the lockout screen based on trial.trialExpired.
       }
     }
 

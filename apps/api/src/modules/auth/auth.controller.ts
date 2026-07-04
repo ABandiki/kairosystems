@@ -3,10 +3,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { SkipTrialCheck } from './decorators/skip-trial-check.decorator';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 
 @ApiTags('auth')
@@ -21,8 +23,16 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Post('google')
+  @Throttle({ default: { limit: 10, ttl: 900000 } })
+  @ApiOperation({ summary: 'Login with a Google ID token (existing accounts only)' })
+  async googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLogin(dto);
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
+  @SkipTrialCheck()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@Req() req: AuthenticatedRequest) {

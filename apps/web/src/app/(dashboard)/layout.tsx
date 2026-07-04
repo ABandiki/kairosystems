@@ -19,7 +19,7 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkTrial = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+        const token = localStorage.getItem('access_token');
         if (!token) {
           setChecked(true);
           return;

@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
 import { patientsApi, appointmentsApi, Patient, Appointment, PatientAlert } from '@/lib/api';
+import { TraditionalMedicineTab } from '@/components/patients/traditional-medicine-tab';
 import { format, parseISO, differenceInYears } from 'date-fns';
 
 // Note interface
@@ -110,6 +111,15 @@ const alertSeverityColors: Record<string, string> = {
   HIGH: 'bg-red-100 text-red-800 border-red-200',
   MEDIUM: 'bg-amber-100 text-amber-800 border-amber-200',
   LOW: 'bg-blue-100 text-blue-800 border-blue-200',
+};
+
+const alertTypeLabels: Record<string, string> = {
+  ALLERGY: 'Allergy',
+  SAFEGUARDING: 'Safeguarding',
+  MEDICAL: 'Medical',
+  COMMUNICATION: 'Communication',
+  TRADITIONAL_MEDICINE: 'Traditional Medicine',
+  OTHER: 'Other',
 };
 
 const appointmentStatusColors: Record<string, string> = {
@@ -361,7 +371,7 @@ export default function PatientDetailPage() {
             >
               <AlertTriangle className="h-5 w-5 flex-shrink-0" />
               <div className="flex-1">
-                <span className="font-medium">{alert.type}: </span>
+                <span className="font-medium">{alertTypeLabels[alert.type] || alert.type}: </span>
                 <span>{alert.description}</span>
               </div>
               <Badge variant="outline">{alert.severity}</Badge>
@@ -378,6 +388,7 @@ export default function PatientDetailPage() {
           <TabsTrigger value="appointments">Appointments ({appointments.length})</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+          <TabsTrigger value="traditional-medicine">Traditional Medicine</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -456,7 +467,7 @@ export default function PatientDetailPage() {
                     {patient.alerts.filter(a => a.isActive).map((alert) => (
                       <div key={alert.id} className="p-2 rounded border text-sm">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">{alert.type}</span>
+                          <span className="font-medium">{alertTypeLabels[alert.type] || alert.type}</span>
                           <Badge variant="outline" className="text-xs">{alert.severity}</Badge>
                         </div>
                         <p className="text-gray-600 mt-1">{alert.description}</p>
@@ -695,6 +706,14 @@ export default function PatientDetailPage() {
             </Button>
           </div>
         </TabsContent>
+
+        {/* Traditional Medicine Tab */}
+        <TabsContent value="traditional-medicine">
+          <TraditionalMedicineTab
+            patientId={patientId}
+            onRecordsChanged={fetchPatientData}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* New Note Dialog */}
@@ -805,6 +824,7 @@ export default function PatientDetailPage() {
                     <SelectItem value="MEDICAL">Medical</SelectItem>
                     <SelectItem value="SAFEGUARDING">Safeguarding</SelectItem>
                     <SelectItem value="COMMUNICATION">Communication</SelectItem>
+                    <SelectItem value="TRADITIONAL_MEDICINE">Traditional Medicine</SelectItem>
                     <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>

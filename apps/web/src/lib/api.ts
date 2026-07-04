@@ -17,6 +17,12 @@ export interface User {
 export interface AuthResponse {
   access_token: string;
   user: User;
+  trial?: {
+    isTrial: boolean;
+    trialEndsAt: string | null;
+    trialExpired: boolean;
+    subscriptionTier: string;
+  } | null;
 }
 
 export interface Patient {
@@ -269,6 +275,15 @@ export const authApi = {
     const response = await apiFetch<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+    });
+    setAccessToken(response.access_token);
+    return response;
+  },
+
+  googleLogin: async (credential: string): Promise<AuthResponse> => {
+    const response = await apiFetch<AuthResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
     });
     setAccessToken(response.access_token);
     return response;
@@ -1170,6 +1185,99 @@ export const prescriptionsApi = {
   },
   delete: async (id: string): Promise<void> => {
     return apiFetch<void>(`/prescriptions/${id}`, { method: 'DELETE' });
+  },
+};
+
+// Billing API
+export const billingApi = {
+  createCheckout: async (tier: 'STARTER' | 'PROFESSIONAL'): Promise<{ url: string }> => {
+    return apiFetch<{ url: string }>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ tier }),
+    });
+  },
+};
+
+// Traditional Medicine API
+export interface TraditionalMedicineRecord {
+  id: string;
+  patientId: string;
+  patientName?: string;
+  consultationId?: string;
+  remedyName: string;
+  localName?: string;
+  category: 'HERBAL' | 'DIETARY' | 'SPIRITUAL' | 'PHYSICAL' | 'OTHER';
+  preparation?: string;
+  indication?: string;
+  frequency?: string;
+  practitionerType:
+    | 'SELF_ADMINISTERED'
+    | 'HERBALIST'
+    | 'TRADITIONAL_HEALTH_PRACTITIONER'
+    | 'FAITH_HEALER'
+    | 'FAMILY_COMMUNITY'
+    | 'UNKNOWN';
+  practitionerName?: string;
+  status: 'CURRENT' | 'PAST';
+  startedAt?: string;
+  stoppedAt?: string;
+  hasInteractionRisk: boolean;
+  interactionNotes?: string;
+  notes?: string;
+  recordedByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const traditionalMedicineApi = {
+  getAll: async (params?: {
+    search?: string;
+    category?: string;
+    status?: string;
+    patientId?: string;
+    hasInteractionRisk?: boolean;
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<TraditionalMedicineRecord>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.category) searchParams.set('category', params.category);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.patientId) searchParams.set('patientId', params.patientId);
+    if (params?.hasInteractionRisk !== undefined)
+      searchParams.set('hasInteractionRisk', String(params.hasInteractionRisk));
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const query = searchParams.toString();
+    return apiFetch<PaginatedResponse<TraditionalMedicineRecord>>(
+      `/traditional-medicine${query ? `?${query}` : ''}`,
+    );
+  },
+  getById: async (id: string): Promise<TraditionalMedicineRecord> => {
+    return apiFetch<TraditionalMedicineRecord>(`/traditional-medicine/${id}`);
+  },
+  getStats: async (): Promise<{
+    total: number;
+    current: number;
+    interactionRisks: number;
+    byCategory: { category: string; count: number }[];
+  }> => {
+    return apiFetch(`/traditional-medicine/stats`);
+  },
+  create: async (data: any): Promise<TraditionalMedicineRecord> => {
+    return apiFetch<TraditionalMedicineRecord>('/traditional-medicine', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+  update: async (id: string, data: any): Promise<TraditionalMedicineRecord> => {
+    return apiFetch<TraditionalMedicineRecord>(`/traditional-medicine/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/traditional-medicine/${id}`, { method: 'DELETE' });
   },
 };
 

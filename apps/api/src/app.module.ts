@@ -21,6 +21,8 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FormSubmissionsModule } from './modules/form-submissions/form-submissions.module';
 import { DemoRequestsModule } from './modules/demo-requests/demo-requests.module';
+import { TraditionalMedicineModule } from './modules/traditional-medicine/traditional-medicine.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TrialGuard } from './modules/auth/guards/trial.guard';
 
@@ -54,6 +56,8 @@ import { TrialGuard } from './modules/auth/guards/trial.guard';
     DashboardModule,
     FormSubmissionsModule,
     DemoRequestsModule,
+    TraditionalMedicineModule,
+    BillingModule,
   ],
   providers: [
     {

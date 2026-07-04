@@ -17,6 +17,8 @@ ENV NODE_ENV=production
 # Build args for Next.js public env vars (baked at build time)
 ARG NEXT_PUBLIC_API_URL=/api
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
 
 # Build the application
 WORKDIR /app/apps/web

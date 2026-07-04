@@ -55,3 +55,19 @@ CREDENTIALS.md
 
 # OS
 Thumbs.db
+
+# Local prototypes and design assets (not part of the app)
+prototypes/
+brand/
+legal files/
+scripts/ig-post-*
+scripts/img-to-b64.html
+
+# Session tooling
+.claude/
+
+# Build metadata
+*.tsbuildinfo
+
+# Sensitive
+twilio_2FA_recovery_code*

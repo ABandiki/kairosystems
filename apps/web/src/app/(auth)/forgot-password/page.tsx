@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, ArrowLeft, CheckCircle, Loader2, Mail } from 'lucide-react';
-import Link from 'next/link';
+import {
+  AuthShell,
+  authLabel,
+  authInput,
+  authPrimaryBtn,
+  authSecondaryBtn,
+  authError,
+} from '@/components/auth/auth-shell';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -48,119 +51,98 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  if (sent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icon.svg" alt="Kairo" className="w-16 h-16 mx-auto mb-4 rounded-xl hover:opacity-80 transition-opacity cursor-pointer" />
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Kairo</h1>
+  return (
+    <AuthShell
+      image="/notes-writing.jpg"
+      imageAlt="A clinician writing patient notes"
+      heading="Reset your password"
+      description="We'll email you a secure link so you can get back into your practice dashboard."
+    >
+      {sent ? (
+        <>
+          <div className="w-14 h-14 bg-[#03989E]/15 border border-[#03989E]/30 rounded-full flex items-center justify-center">
+            <CheckCircle className="w-7 h-7 text-[#4CBD90]" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-medium tracking-tight">Check your email</h2>
+            <p className="text-white/40 text-sm leading-relaxed">
+              If an account exists for <span className="text-white/90 font-medium">{email}</span>,
+              we&apos;ve sent a password reset link. Please check your inbox and spam folder.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              type="button"
+              className={`${authSecondaryBtn} w-full`}
+              onClick={() => {
+                setSent(false);
+                setEmail('');
+              }}
+            >
+              <Mail className="w-4 h-4" />
+              Try a different email
+            </button>
+            <button type="button" className={authPrimaryBtn} onClick={() => router.push('/login')}>
+              Back to sign in
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-medium tracking-tight">Forgot password</h2>
+            <p className="text-white/40 text-sm">
+              Enter your email and we&apos;ll send you a reset link.
+            </p>
           </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Check your email</h2>
-                <p className="text-gray-600 text-sm">
-                  If an account exists for <span className="font-medium">{email}</span>, we&apos;ve sent a password reset link. Please check your inbox and spam folder.
-                </p>
-                <div className="pt-4 space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => { setSent(false); setEmail(''); }}
-                  >
-                    <Mail className="w-4 h-4 mr-2" />
-                    Try a different email
-                  </Button>
-                  <Button className="w-full" onClick={() => router.push('/login')}>
-                    Back to Sign In
-                  </Button>
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className={authError}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+            )}
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.svg" alt="Kairo" className="w-16 h-16 mx-auto mb-4 rounded-xl hover:opacity-80 transition-opacity cursor-pointer" />
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Kairo</h1>
-          <p className="text-gray-600">GP Practice Management System</p>
-        </div>
+            <div className="space-y-2">
+              <label htmlFor="email" className={authLabel}>
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                className={authInput}
+                placeholder="name@practice.co.zw"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Forgot Password</CardTitle>
-            <CardDescription className="text-center">
-              Enter your email and we&apos;ll send you a reset link
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
+            <button type="submit" className={authPrimaryBtn} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send reset link'
               )}
+            </button>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@practice.co.zw"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  autoComplete="email"
-                  autoFocus
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  'Send Reset Link'
-                )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => router.push('/login')}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Sign In
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-gray-500 mt-6">
-          KairoSystems - Healthcare Management for Africa
-        </p>
-      </div>
-    </div>
+            <button
+              type="button"
+              className="w-full inline-flex items-center justify-center gap-2 text-sm text-white/40 hover:text-white transition-colors py-2"
+              onClick={() => router.push('/login')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to sign in
+            </button>
+          </form>
+        </>
+      )}
+    </AuthShell>
   );
 }

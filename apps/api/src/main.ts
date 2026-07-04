@@ -11,7 +11,8 @@ async function bootstrap() {
   // Validate environment variables before anything else
   validateEnv();
 
-  const app = await NestFactory.create(AppModule);
+  // rawBody is required to verify Stripe webhook signatures
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
   // Security headers (enhanced)

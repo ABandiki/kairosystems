@@ -350,28 +350,28 @@ export default function FormBuilderPage() {
       case "demographics":
         fields = defaultDemographicFields.map((f) => ({
           ...f,
-          id: `f${Date.now()}_${f.id}`,
+          id: `f${crypto.randomUUID()}_${f.id}`,
         }));
         title = "[EN] Client Information";
         break;
       case "primary_insurance":
         fields = defaultInsuranceFields.map((f) => ({
           ...f,
-          id: `f${Date.now()}_${f.id}`,
+          id: `f${crypto.randomUUID()}_${f.id}`,
         }));
         title = "[EN] Primary Insurance Information";
         break;
       case "secondary_insurance":
         fields = defaultInsuranceFields.map((f) => ({
           ...f,
-          id: `f${Date.now()}_${f.id}`,
+          id: `f${crypto.randomUUID()}_${f.id}`,
         }));
         title = "[EN] Secondary Insurance Information";
         break;
       case "allergies":
         fields = defaultAllergiesFields.map((f) => ({
           ...f,
-          id: `f${Date.now()}_${f.id}`,
+          id: `f${crypto.randomUUID()}_${f.id}`,
         }));
         title = "[EN] Allergies";
         break;
@@ -380,7 +380,7 @@ export default function FormBuilderPage() {
     }
 
     const newQuestion: FormQuestion = {
-      id: `q${Date.now()}`,
+      id: `q${crypto.randomUUID()}`,
       order: form.questions.length + 1,
       type,
       title,
@@ -418,11 +418,11 @@ export default function FormBuilderPage() {
 
     const newQuestion: FormQuestion = {
       ...question,
-      id: `q${Date.now()}`,
+      id: `q${crypto.randomUUID()}`,
       order: form.questions.length + 1,
       title: `${question.title} (Copy)`,
       fields: question.fields
-        ? question.fields.map((f) => ({ ...f, id: `f${Date.now()}_${f.id}` }))
+        ? question.fields.map((f) => ({ ...f, id: `f${crypto.randomUUID()}_${f.id}` }))
         : undefined,
     };
 
@@ -482,7 +482,7 @@ export default function FormBuilderPage() {
     if (!form || !selectedQuestionId) return;
 
     const newField: FormField = {
-      id: `f${Date.now()}`,
+      id: `f${crypto.randomUUID()}`,
       name: "New Field",
       type: "text",
       required: false,

@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class SuperAdminService {
+  private readonly logger = new Logger(SuperAdminService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -317,7 +319,7 @@ export class SuperAdminService {
       });
     } catch (error) {
       // If table doesn't exist yet, return empty array
-      console.error('Activity log error:', error);
+      this.logger.error('Activity log error:', error);
       return [];
     }
   }

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { CookieBanner } from '@/components/cookie-banner';
 import { RequestDemoButton } from '@/components/request-demo-dialog';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: 'Kairo | Practice Management Software for Healthcare Practices in Zimbabwe',
@@ -46,18 +47,15 @@ import {
   FileText,
   CreditCard,
   Shield,
-  Clock,
   CheckCircle,
-  ArrowRight,
   BarChart3,
   Pill,
   ClipboardList,
-  Monitor,
   Heart,
   ChevronRight,
   Star,
-  Zap,
   Lock,
+  KeyRound,
   Globe,
   MessageSquare
 } from 'lucide-react';
@@ -244,321 +242,86 @@ export default function LandingPage() {
         }}
       />
 
-      {/* Navigation */}
-      <nav role="navigation" aria-label="Main navigation" className="fixed top-0 w-full bg-white/80 backdrop-blur-lg z-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <KairoLogo className="w-9 h-9" />
-              <span className="text-xl font-bold text-gray-900">Kairo</span>
-            </div>
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-sm text-gray-600 hover:text-[#03989E] transition-colors">Features</a>
-              <a href="#how-it-works" className="text-sm text-gray-600 hover:text-[#03989E] transition-colors">How It Works</a>
-              <a href="#security" className="text-sm text-gray-600 hover:text-[#03989E] transition-colors">Security</a>
-              <a href="#pricing" className="text-sm text-gray-600 hover:text-[#03989E] transition-colors">Pricing</a>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="text-sm font-medium text-gray-700 hover:text-[#03989E] transition-colors"
-              >
-                Log in
-              </Link>
-              <RequestDemoButton
-                className="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium text-[#03989E] border border-[#03989E]/30 rounded-lg hover:bg-[#E6F7F7] transition-colors"
-              >
-                Request Demo
-              </RequestDemoButton>
-              <Link
-                href="/register"
-                className="inline-flex items-center px-4 py-2 bg-[#03989E] text-white text-sm font-medium rounded-lg hover:bg-[#027A7F] transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
+      {/* Navigation — floating centered pills */}
+      <nav role="navigation" aria-label="Main navigation" className="fixed top-0 inset-x-0 z-50">
+        <div className="flex items-center justify-center pt-4 sm:pt-6 px-4 sm:px-8 gap-2 sm:gap-3">
+          <Link
+            href="/"
+            aria-label="Kairo home"
+            className="flex items-center justify-center rounded-full w-10 h-10 sm:w-11 sm:h-11 shrink-0 bg-white/90 backdrop-blur-md shadow-sm"
+          >
+            <KairoLogo className="w-6 h-6 sm:w-7 sm:h-7" />
+          </Link>
+          <div className="hidden md:flex items-center gap-8 rounded-xl px-7 py-3 bg-white/90 backdrop-blur-md shadow-sm">
+            <a href="#features" className="text-[13px] font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Features</a>
+            <a href="#how-it-works" className="text-[13px] font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">How It Works</a>
+            <a href="#security" className="text-[13px] font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Security</a>
+            <a href="#pricing" className="text-[13px] font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Pricing</a>
+          </div>
+          <div className="flex items-center gap-4 sm:gap-6 rounded-xl px-4 sm:px-6 py-2.5 sm:py-3 bg-white/90 backdrop-blur-md shadow-sm">
+            <Link
+              href="/login"
+              className="text-[12px] sm:text-[13px] font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200"
+            >
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              className="text-[12px] sm:text-[13px] font-medium text-[#03989E] hover:text-[#027A7F] transition-colors duration-200"
+            >
+              Start free trial
+            </Link>
           </div>
         </div>
       </nav>
 
       <main>
-      {/* Hero Section */}
-      <section aria-label="Hero" className="relative pt-32 pb-20 overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-teal-50/80 via-white to-emerald-50/60" />
-        <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-[#03989E]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#4CBD90]/5 rounded-full blur-3xl" />
+      {/* Hero Section — fullscreen photo */}
+      <section aria-label="Hero" className="relative min-h-screen overflow-hidden bg-[#f0f0ee]">
+        <Image
+          src="/hero-consultation.jpg"
+          alt="A doctor in consultation with a patient at a healthcare practice"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        {/* Legibility overlays — strong only near the bottom-left copy */}
+        <div className="absolute inset-y-0 left-0 w-full sm:w-3/5 bg-gradient-to-r from-white/60 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 h-[30rem] sm:h-72 bg-gradient-to-t from-white via-white/60 to-transparent sm:from-white/90 sm:via-white/50" aria-hidden="true" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#E6F7F7] border border-[#03989E]/20 rounded-full text-sm text-[#03989E] font-medium mb-6">
-              <Zap className="w-4 h-4" />
-              Built for Healthcare Practices
-            </div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 tracking-tight leading-[1.1]">
-              Practice management,{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#03989E] to-[#4CBD90]">
-                simplified
-              </span>
-            </h1>
-            <p className="mt-3 text-base sm:text-lg text-gray-500 font-medium">
-              Practice Management Software for Healthcare Practices in Zimbabwe
-            </p>
-            <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Kairo brings together appointments, patient records, billing, and clinical notes
-              in one intuitive platform — so you can spend less time on admin and more time with patients.
-            </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/register"
-                className="inline-flex items-center px-8 py-3.5 bg-[#03989E] text-white text-base font-semibold rounded-xl hover:bg-[#027A7F] transition-all shadow-lg shadow-[#03989E]/25 hover:shadow-xl hover:shadow-[#03989E]/30 hover:-translate-y-0.5"
+        <div className="relative z-10 flex flex-col min-h-screen">
+          <div className="flex-1 flex items-end pb-12 sm:pb-16 lg:pb-20 px-6 sm:px-12 md:px-20 lg:px-28">
+            <div className="max-w-sm">
+              <a
+                href="#traditional-medicine"
+                className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-[#03989E] hover:text-[#027A7F] transition-colors mb-3 group"
               >
-                Start Free Trial
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-              <RequestDemoButton
-                className="inline-flex items-center px-8 py-3.5 bg-white text-gray-700 text-base font-semibold rounded-xl border border-gray-200 hover:border-[#03989E]/30 hover:text-[#03989E] transition-all"
-              >
-                Request a Demo
-              </RequestDemoButton>
-            </div>
-            <div className="mt-12 flex items-center justify-center gap-8 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-[#4CBD90]" />
-                No credit card required
+                New — Traditional medicine, finally on the record
+                <span className="inline-block transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+              </a>
+              <h1 className="text-[1.6rem] sm:text-[1.9rem] leading-[1.15] font-medium text-gray-900 tracking-tight mb-3">
+                Simple, smart practice management for African healthcare.
+              </h1>
+              <p className="text-[13px] text-gray-500 font-normal mb-4">
+                Appointments, records, billing and clinical notes for practices in
+                Zimbabwe — with traditional medicine recorded alongside conventional care.
+              </p>
+              <div className="flex items-center gap-4 mb-3">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-2 text-[13px] font-medium text-[#03989E] border border-[#03989E]/60 rounded-full px-5 py-2.5 bg-white/70 backdrop-blur-sm hover:bg-[#03989E] hover:text-white hover:border-[#03989E] transition-all duration-200 group"
+                >
+                  Start your free trial
+                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+                </Link>
+                <RequestDemoButton className="text-[13px] font-medium text-gray-600 hover:text-gray-900 transition-colors duration-200">
+                  Request a demo
+                </RequestDemoButton>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-[#4CBD90]" />
-                2-day free trial
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-[#4CBD90]" />
-                Setup in minutes
-              </div>
-            </div>
-          </div>
-
-          {/* Multi-Device Showcase */}
-          <div className="mt-20 max-w-6xl mx-auto relative" style={{ height: '520px' }}>
-
-            {/* === MACBOOK (Centre) === */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-0 z-20" style={{ width: '680px' }}>
-              {/* Screen bezel */}
-              <div className="bg-[#1a1a1a] rounded-t-xl pt-3 px-3 pb-0">
-                {/* Camera dot */}
-                <div className="flex justify-center mb-2">
-                  <div className="w-2 h-2 rounded-full bg-[#2a2a2a] ring-1 ring-[#333]" />
-                </div>
-                {/* Screen */}
-                <div className="bg-white rounded-t-sm overflow-hidden">
-                  {/* Browser chrome */}
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[#f5f5f5] border-b border-gray-200">
-                    <div className="flex items-center gap-1">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
-                    </div>
-                    <div className="flex-1 flex justify-center">
-                      <div className="px-3 py-0.5 bg-white rounded text-[10px] text-gray-400 border border-gray-200 flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5" />
-                        kairo.clinic/dashboard
-                      </div>
-                    </div>
-                  </div>
-                  {/* Dashboard content */}
-                  <div className="p-4 bg-gradient-to-br from-gray-50 to-white" style={{ height: '320px' }}>
-                    {/* Sidebar + Main */}
-                    <div className="flex gap-3 h-full">
-                      {/* Mini Sidebar */}
-                      <div className="w-12 bg-white rounded-lg border border-gray-100 p-2 flex flex-col items-center gap-3 flex-shrink-0">
-                        <KairoLogo className="w-7 h-7" />
-                        <div className="w-7 h-7 bg-[#E6F7F7] rounded-md flex items-center justify-center">
-                          <BarChart3 className="w-3.5 h-3.5 text-[#03989E]" />
-                        </div>
-                        <div className="w-7 h-7 hover:bg-gray-50 rounded-md flex items-center justify-center">
-                          <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        </div>
-                        <div className="w-7 h-7 hover:bg-gray-50 rounded-md flex items-center justify-center">
-                          <Users className="w-3.5 h-3.5 text-gray-400" />
-                        </div>
-                        <div className="w-7 h-7 hover:bg-gray-50 rounded-md flex items-center justify-center">
-                          <FileText className="w-3.5 h-3.5 text-gray-400" />
-                        </div>
-                      </div>
-                      {/* Main content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="grid grid-cols-4 gap-2 mb-3">
-                          {[
-                            { label: 'Patients', value: '24', color: 'text-[#03989E]', bg: 'bg-[#E6F7F7]' },
-                            { label: 'Appointments', value: '18', color: 'text-[#4CBD90]', bg: 'bg-[#E8F8F2]' },
-                            { label: 'Pending', value: '6', color: 'text-amber-600', bg: 'bg-amber-50' },
-                            { label: 'Revenue', value: '$2.8k', color: 'text-blue-600', bg: 'bg-blue-50' },
-                          ].map((s) => (
-                            <div key={s.label} className={`${s.bg} rounded-lg p-2 text-center`}>
-                              <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
-                              <p className="text-[9px] text-gray-500">{s.label}</p>
-                            </div>
-                          ))}
-                        </div>
-                        {/* Schedule */}
-                        <div className="bg-white rounded-lg border border-gray-100 p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-semibold text-gray-900">Today&apos;s Schedule</span>
-                            <span className="text-[9px] text-gray-400">Mon, 10 Feb</span>
-                          </div>
-                          {[
-                            { time: '09:00', name: 'Sarah Johnson', type: 'Check-up', c: 'bg-[#03989E]' },
-                            { time: '09:30', name: 'David Chen', type: 'Follow-up', c: 'bg-[#4CBD90]' },
-                            { time: '10:00', name: 'Maria Garcia', type: 'New Patient', c: 'bg-amber-500' },
-                            { time: '10:30', name: 'James Wilson', type: 'Consult', c: 'bg-[#03989E]' },
-                            { time: '11:00', name: 'Emma Brown', type: 'Review', c: 'bg-[#4CBD90]' },
-                          ].map((a) => (
-                            <div key={a.time} className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0">
-                              <span className="text-[9px] font-mono text-gray-400 w-7">{a.time}</span>
-                              <div className={`w-0.5 h-5 rounded-full ${a.c}`} />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[10px] font-medium text-gray-900 truncate">{a.name}</p>
-                                <p className="text-[8px] text-gray-400">{a.type}</p>
-                              </div>
-                              <div className="w-5 h-5 rounded bg-gray-50 flex items-center justify-center">
-                                <ChevronRight className="w-3 h-3 text-gray-300" />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Macbook base/hinge */}
-              <div className="relative">
-                <div className="bg-gradient-to-b from-[#c0c0c0] to-[#a8a8a8] h-3 rounded-b-sm mx-3" />
-                <div className="bg-gradient-to-b from-[#d4d4d4] to-[#b8b8b8] h-2 mx-auto rounded-b-lg" style={{ width: '40%' }} />
-              </div>
-            </div>
-
-            {/* === IPAD (Right) === */}
-            <div className="absolute right-0 sm:right-4 lg:-right-4 top-16 z-30 rotate-2" style={{ width: '220px' }}>
-              {/* iPad frame */}
-              <div className="bg-[#1a1a1a] rounded-[20px] p-2 shadow-2xl shadow-black/20">
-                {/* Camera */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#2a2a2a]" />
-                {/* Screen */}
-                <div className="bg-white rounded-[14px] overflow-hidden" style={{ height: '300px' }}>
-                  {/* iPad Header Bar */}
-                  <div className="px-3 py-2 bg-[#03989E]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <KairoLogoWhite className="w-3 h-3" />
-                        <span className="text-[9px] font-bold text-white">Kairo</span>
-                      </div>
-                      <span className="text-[8px] text-teal-100">Appointments</span>
-                    </div>
-                  </div>
-                  {/* Appointment List */}
-                  <div className="p-2.5">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[9px] font-semibold text-gray-900">Today</span>
-                      <div className="px-1.5 py-0.5 bg-[#E6F7F7] rounded text-[7px] text-[#03989E] font-medium">8 slots</div>
-                    </div>
-                    {[
-                      { time: '09:00', name: 'S. Johnson', type: 'Check-up', status: 'Confirmed', sc: 'bg-[#4CBD90]', stc: 'text-[#4CBD90]' },
-                      { time: '09:30', name: 'D. Chen', type: 'Follow-up', status: 'Arrived', sc: 'bg-amber-500', stc: 'text-amber-600' },
-                      { time: '10:00', name: 'M. Garcia', type: 'New Patient', status: 'Confirmed', sc: 'bg-[#4CBD90]', stc: 'text-[#4CBD90]' },
-                      { time: '10:30', name: 'J. Wilson', type: 'Consult', status: 'Booked', sc: 'bg-[#03989E]', stc: 'text-[#03989E]' },
-                      { time: '11:00', name: 'E. Brown', type: 'Review', status: 'Booked', sc: 'bg-[#03989E]', stc: 'text-[#03989E]' },
-                      { time: '11:30', name: 'R. Taylor', type: 'Follow-up', status: 'Booked', sc: 'bg-[#03989E]', stc: 'text-[#03989E]' },
-                    ].map((a) => (
-                      <div key={a.time} className="flex items-center gap-2 py-1.5 border-b border-gray-50">
-                        <span className="text-[8px] font-mono text-gray-400 w-6">{a.time}</span>
-                        <div className={`w-0.5 h-6 rounded-full ${a.sc}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-medium text-gray-900">{a.name}</p>
-                          <p className="text-[7px] text-gray-400">{a.type}</p>
-                        </div>
-                        <span className={`text-[7px] font-medium ${a.stc}`}>{a.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* === IPHONE (Left) === */}
-            <div className="absolute left-0 sm:left-4 lg:-left-2 top-24 z-30 -rotate-3" style={{ width: '150px' }}>
-              {/* iPhone frame */}
-              <div className="bg-[#1a1a1a] rounded-[24px] p-1.5 shadow-2xl shadow-black/20">
-                {/* Notch */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-14 h-3.5 bg-[#1a1a1a] rounded-b-xl z-10" />
-                {/* Screen */}
-                <div className="bg-white rounded-[20px] overflow-hidden relative" style={{ height: '310px' }}>
-                  {/* Status bar */}
-                  <div className="px-4 pt-3.5 pb-1 bg-[#03989E]">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[7px] text-white font-medium">9:41</span>
-                      <div className="flex items-center gap-0.5">
-                        <div className="w-2.5 h-1.5 border border-white rounded-sm">
-                          <div className="w-1.5 h-full bg-white rounded-sm" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 pb-2">
-                      <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                        <KairoLogoWhite className="w-2.5 h-2.5" />
-                      </div>
-                      <div>
-                        <p className="text-[8px] font-bold text-white">Good Morning</p>
-                        <p className="text-[7px] text-teal-100">Dr. Moyo</p>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Quick Stats */}
-                  <div className="px-2 pt-2">
-                    <div className="grid grid-cols-2 gap-1.5 mb-2">
-                      <div className="bg-[#E6F7F7] rounded-lg p-1.5 text-center">
-                        <p className="text-xs font-bold text-[#03989E]">12</p>
-                        <p className="text-[7px] text-gray-500">Today</p>
-                      </div>
-                      <div className="bg-[#E8F8F2] rounded-lg p-1.5 text-center">
-                        <p className="text-xs font-bold text-[#4CBD90]">3</p>
-                        <p className="text-[7px] text-gray-500">Waiting</p>
-                      </div>
-                    </div>
-                    {/* Next appointment card */}
-                    <div className="bg-gradient-to-r from-[#03989E] to-[#028a8f] rounded-lg p-2 mb-2">
-                      <p className="text-[7px] text-teal-200 mb-0.5">NEXT UP</p>
-                      <p className="text-[9px] font-semibold text-white">Sarah Johnson</p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-[7px] text-teal-100">09:00 — Check-up</p>
-                        <div className="px-1 py-0.5 bg-white/20 rounded text-[6px] text-white">Room 1</div>
-                      </div>
-                    </div>
-                    {/* Mini list */}
-                    <p className="text-[8px] font-semibold text-gray-900 mb-1">Upcoming</p>
-                    {[
-                      { time: '09:30', name: 'D. Chen', c: 'bg-[#4CBD90]' },
-                      { time: '10:00', name: 'M. Garcia', c: 'bg-amber-500' },
-                      { time: '10:30', name: 'J. Wilson', c: 'bg-[#03989E]' },
-                    ].map((a) => (
-                      <div key={a.time} className="flex items-center gap-1.5 py-1 border-b border-gray-50">
-                        <div className={`w-0.5 h-4 rounded-full ${a.c}`} />
-                        <span className="text-[7px] font-mono text-gray-400">{a.time}</span>
-                        <span className="text-[8px] text-gray-700">{a.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Bottom home indicator */}
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-10 h-1 bg-gray-300 rounded-full" />
-                </div>
-              </div>
-            </div>
-
-            {/* Subtle label below devices */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-6 text-[11px] text-gray-400">
-              <span className="flex items-center gap-1"><Monitor className="w-3 h-3" /> Desktop</span>
-              <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><line x1="12" y1="18" x2="12" y2="18" /></svg> Tablet</span>
-              <span className="flex items-center gap-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="2" width="10" height="20" rx="2" /><line x1="12" y1="18" x2="12" y2="18" /></svg> Mobile</span>
+              <p className="text-[11.5px] text-gray-400">
+                No credit card required · Setup in minutes
+              </p>
             </div>
           </div>
         </div>
@@ -581,18 +344,88 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Traditional Medicine — full-bleed story section */}
+      <section
+        id="traditional-medicine"
+        aria-label="Traditional medicine records"
+        className="relative min-h-[85vh] overflow-hidden bg-gray-900"
+      >
+        <Image
+          src="/herbs-market.jpg"
+          alt="Traditional herbal medicines and remedies at an African market stall"
+          fill
+          sizes="100vw"
+          className="object-cover"
+        />
+        {/* Legibility overlays — dark counterpart to the hero */}
+        <div className="absolute inset-y-0 left-0 w-full sm:w-3/5 bg-gradient-to-r from-black/75 to-transparent" aria-hidden="true" />
+        <div className="absolute inset-x-0 bottom-0 h-[28rem] sm:h-80 bg-gradient-to-t from-black/95 via-black/60 to-transparent" aria-hidden="true" />
+
+        {/* Inset — remedies are identified leaf by leaf, name by name */}
+        <div className="hidden lg:block absolute right-16 bottom-20 z-10 w-[280px] rounded-3xl overflow-hidden border border-white/20 shadow-2xl rotate-1">
+          <Image
+            src="/herb-leaves.jpg"
+            alt="Hands holding medicinal leaves"
+            width={560}
+            height={373}
+            className="object-cover"
+          />
+        </div>
+
+        <div className="relative z-10 flex flex-col min-h-[85vh]">
+          <div className="flex-1 flex items-end pb-12 sm:pb-16 lg:pb-20 px-6 sm:px-12 md:px-20 lg:px-28">
+            <div className="max-w-md">
+              <p className="text-[11.5px] font-medium text-[#4CBD90] mb-3">
+                Traditional medicine, on the record
+              </p>
+              <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-white tracking-tight mb-3">
+                Most patients see a traditional practitioner before they ever
+                reach your rooms.
+              </h2>
+              <p className="text-[13px] text-gray-300 font-normal mb-5">
+                Kairo is the first practice management system built to record
+                traditional and complementary medicine alongside conventional
+                care — remedies, local names, practitioners and interaction
+                risks, all visible before you prescribe.
+              </p>
+              <ul className="space-y-2 mb-6">
+                <li className="flex items-start gap-2 text-[12.5px] text-gray-200">
+                  <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90] mt-0.5 shrink-0" />
+                  Record remedies by their local names — zumbani, umhlonyane, African potato
+                </li>
+                <li className="flex items-start gap-2 text-[12.5px] text-gray-200">
+                  <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90] mt-0.5 shrink-0" />
+                  Automatic high-priority alerts when a remedy risks interacting with treatment
+                </li>
+                <li className="flex items-start gap-2 text-[12.5px] text-gray-200">
+                  <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90] mt-0.5 shrink-0" />
+                  The full picture of every kind of care your patients actually seek
+                </li>
+              </ul>
+              <RequestDemoButton className="inline-flex items-center gap-2 text-[13px] font-medium text-white border border-white/60 rounded-full px-5 py-2.5 hover:bg-white hover:text-gray-900 hover:border-white transition-all duration-200 group">
+                See it in action
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+              </RequestDemoButton>
+              <p className="mt-4 text-[11px] text-gray-400">
+                Aligned with the WHO Traditional Medicine Strategy and UN SDG 3.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Grid */}
-      <section id="features" aria-label="Features" className="py-24">
+      <section id="features" aria-label="Features" className="py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
+            <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
               Features
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            </p>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight">
               Everything your practice needs,{' '}
               <span className="text-[#03989E]">all in one place</span>
             </h2>
-            <p className="mt-4 text-lg text-gray-600">
+            <p className="mt-3 text-[13px] text-gray-500">
               From appointment scheduling to clinical notes, Kairo streamlines every aspect of your practice workflow.
             </p>
           </div>
@@ -603,66 +436,66 @@ export default function LandingPage() {
                 icon: Calendar,
                 title: 'Smart Scheduling',
                 description: 'Intuitive appointment booking with drag-and-drop, room management, and real-time availability across your whole team.',
-                color: 'bg-[#E6F7F7] text-[#03989E]',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: Users,
                 title: 'Patient Records',
                 description: 'Comprehensive electronic health records with medical history, demographics, allergies, and medications all in one view.',
-                color: 'bg-[#E8F8F2] text-[#4CBD90]',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: FileText,
                 title: 'Clinical Notes',
                 description: 'Structured consultation templates, SOAP notes, and clinical documentation that saves you time on every patient encounter.',
-                color: 'bg-blue-50 text-blue-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: CreditCard,
                 title: 'Billing & Invoicing',
                 description: 'Generate invoices, track payments, and manage your practice revenue with integrated billing workflows.',
-                color: 'bg-purple-50 text-purple-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: Pill,
                 title: 'Prescriptions',
                 description: 'Manage pharmacies, generate prescriptions, and maintain a complete medication history for every patient.',
-                color: 'bg-amber-50 text-amber-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: ClipboardList,
                 title: 'Forms & Questionnaires',
                 description: 'Create custom patient intake forms, consent forms, and health questionnaires with a drag-and-drop builder.',
-                color: 'bg-rose-50 text-rose-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: BarChart3,
                 title: 'Analytics Dashboard',
                 description: 'Real-time insights into patient flow, staff utilisation, appointment trends, and practice performance.',
-                color: 'bg-indigo-50 text-indigo-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: MessageSquare,
                 title: 'WhatsApp & SMS Notifications',
                 description: 'Reach patients where they are. Send appointment reminders, confirmations, and custom messages via WhatsApp, SMS, or email.',
-                color: 'bg-green-50 text-green-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
               {
                 icon: Users,
                 title: 'Staff Management',
                 description: 'Manage your team with role-based access, individual schedules, and granular permissions for every staff member.',
-                color: 'bg-teal-50 text-teal-600',
+                color: 'bg-gray-50 text-[#03989E]',
               },
             ].map((feature) => (
               <div
                 key={feature.title}
-                className="group relative p-6 rounded-2xl border border-gray-100 bg-white hover:border-[#03989E]/20 hover:shadow-lg hover:shadow-[#03989E]/5 transition-all duration-300"
+                className="relative p-6 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 transition-colors"
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${feature.color} mb-4`}>
-                  <feature.icon className="w-6 h-6" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${feature.color} mb-4`}>
+                  <feature.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+                <h3 className="text-[15px] font-medium text-gray-900 mb-2">{feature.title}</h3>
+                <p className="text-[13px] text-gray-500 leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -670,16 +503,16 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" aria-label="How it works" className="py-24 bg-gradient-to-br from-gray-50 to-white">
+      <section id="how-it-works" aria-label="How it works" className="py-20 sm:py-24 bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
+            <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
               How It Works
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            </p>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight">
               Up and running in <span className="text-[#03989E]">under 10 minutes</span>
             </h2>
-            <p className="mt-4 text-lg text-gray-600">
+            <p className="mt-3 text-[13px] text-gray-500">
               Getting started with Kairo is straightforward. No lengthy onboarding or complex migrations.
             </p>
           </div>
@@ -709,14 +542,14 @@ export default function LandingPage() {
             ].map((item, index) => (
               <div key={item.step} className="relative">
                 {index < 3 && (
-                  <div className="hidden md:block absolute top-8 left-[calc(50%+2rem)] w-[calc(100%-4rem)] h-px bg-gradient-to-r from-[#03989E]/30 to-[#03989E]/10" />
+                  <div className="hidden md:block absolute top-2 left-[calc(50%+2rem)] w-[calc(100%-4rem)] h-px bg-gray-200" />
                 )}
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#03989E] text-white text-xl font-bold mb-4 shadow-lg shadow-[#03989E]/20">
+                  <div className="text-[11.5px] font-medium text-[#03989E] mb-3">
                     {item.step}
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
+                  <h3 className="text-[15px] font-medium text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-[13px] text-gray-500 leading-relaxed">{item.description}</p>
                 </div>
               </div>
             ))}
@@ -725,19 +558,18 @@ export default function LandingPage() {
       </section>
 
       {/* Feature Highlight - Split Section */}
-      <section aria-label="Feature highlights" className="py-24">
+      <section aria-label="Feature highlights" className="py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Highlight 1 */}
           <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
-                <Clock className="w-4 h-4" />
+              <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
                 Save 2+ Hours Daily
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-4">
+              </p>
+              <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight mb-3">
                 Less admin, more time for what matters — quality patient care
               </h2>
-              <p className="text-gray-600 leading-relaxed mb-6">
+              <p className="text-[13px] text-gray-500 leading-relaxed mb-6">
                 Kairo automates the repetitive tasks that eat into your clinical time.
                 From quick-fill appointment slots to templated clinical notes, everything is designed
                 to keep your focus where it belongs — on your patients.
@@ -750,35 +582,35 @@ export default function LandingPage() {
                   'Instant access to full patient history during consultations',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-[#4CBD90] mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{item}</span>
+                    <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90] mt-0.5 flex-shrink-0" />
+                    <span className="text-[13px] text-gray-600">{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="bg-gradient-to-br from-[#E6F7F7] to-[#E8F8F2] rounded-2xl p-8 relative">
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <div className="bg-gray-50 rounded-2xl p-8 relative">
+              <div className="bg-white rounded-xl p-6 border border-gray-100">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-[#03989E] rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-[#03989E]" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 text-sm">New Consultation Note</h4>
-                    <p className="text-xs text-gray-500">Sarah Johnson — Follow-up</p>
+                    <h4 className="text-[13px] font-medium text-gray-900">New Consultation Note</h4>
+                    <p className="text-[11.5px] text-gray-500">Sarah Johnson — Follow-up</p>
                   </div>
                 </div>
                 <div className="space-y-3">
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Presenting Complaint</p>
-                    <p className="text-sm text-gray-700">Persistent headache for 3 days, not responding to paracetamol...</p>
+                    <p className="text-[11.5px] font-medium text-gray-500 mb-1">Presenting Complaint</p>
+                    <p className="text-[13px] text-gray-600">Persistent headache for 3 days, not responding to paracetamol...</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Examination</p>
-                    <p className="text-sm text-gray-700">BP 128/82, Temp 36.8°C, neuro exam NAD...</p>
+                    <p className="text-[11.5px] font-medium text-gray-500 mb-1">Examination</p>
+                    <p className="text-[13px] text-gray-600">BP 128/82, Temp 36.8°C, neuro exam NAD...</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Plan</p>
-                    <p className="text-sm text-gray-700">Trial of sumatriptan 50mg PRN. Review in 2 weeks...</p>
+                    <p className="text-[11.5px] font-medium text-gray-500 mb-1">Plan</p>
+                    <p className="text-[13px] text-gray-600">Trial of sumatriptan 50mg PRN. Review in 2 weeks...</p>
                   </div>
                 </div>
               </div>
@@ -787,33 +619,33 @@ export default function LandingPage() {
 
           {/* Highlight 2 */}
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8">
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <div className="order-2 lg:order-1 bg-gray-50 rounded-2xl p-8">
+              <div className="bg-white rounded-xl p-6 border border-gray-100">
                 <div className="flex items-center justify-between mb-6">
-                  <h4 className="font-semibold text-gray-900 text-sm">Practice Overview</h4>
-                  <span className="text-xs text-gray-400">This Week</span>
+                  <h4 className="text-[13px] font-medium text-gray-900">Practice Overview</h4>
+                  <span className="text-[11.5px] text-gray-400">This Week</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="bg-[#E6F7F7] rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-[#03989E]">142</p>
-                    <p className="text-xs text-gray-600">Appointments</p>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xl font-medium tracking-tight text-gray-900">142</p>
+                    <p className="text-[11.5px] text-gray-500">Appointments</p>
                   </div>
-                  <div className="bg-[#E8F8F2] rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-[#4CBD90]">97%</p>
-                    <p className="text-xs text-gray-600">Attendance</p>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xl font-medium tracking-tight text-gray-900">97%</p>
+                    <p className="text-[11.5px] text-gray-500">Attendance</p>
                   </div>
-                  <div className="bg-blue-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-blue-600">$18.4k</p>
-                    <p className="text-xs text-gray-600">Revenue</p>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xl font-medium tracking-tight text-gray-900">$18.4k</p>
+                    <p className="text-[11.5px] text-gray-500">Revenue</p>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-bold text-purple-600">4.9</p>
-                    <p className="text-xs text-gray-600">Satisfaction</p>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xl font-medium tracking-tight text-gray-900">4.9</p>
+                    <p className="text-[11.5px] text-gray-500">Satisfaction</p>
                   </div>
                 </div>
                 {/* Mini Bar Chart */}
                 <div className="mt-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Daily Appointments</p>
+                  <p className="text-[11.5px] font-medium text-gray-500 mb-2">Daily Appointments</p>
                   <div className="flex items-end gap-1 h-16">
                     {[60, 75, 85, 45, 90, 70, 80].map((h, i) => (
                       <div key={i} className="flex-1 bg-[#03989E]/20 rounded-t-sm relative">
@@ -833,14 +665,13 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full text-sm text-blue-600 font-medium mb-4">
-                <BarChart3 className="w-4 h-4" />
+              <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
                 Data-Driven Insights
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight mb-4">
+              </p>
+              <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight mb-3">
                 Understand your practice like never before
               </h2>
-              <p className="text-gray-600 leading-relaxed mb-6">
+              <p className="text-[13px] text-gray-500 leading-relaxed mb-6">
                 Track patient flow, monitor revenue, analyse appointment trends, and identify opportunities
                 to grow your practice — all from a real-time analytics dashboard.
               </p>
@@ -852,8 +683,8 @@ export default function LandingPage() {
                   'Customisable reports for practice meetings',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-[#4CBD90] mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{item}</span>
+                    <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90] mt-0.5 flex-shrink-0" />
+                    <span className="text-[13px] text-gray-600">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -863,23 +694,22 @@ export default function LandingPage() {
       </section>
 
       {/* Security & Compliance */}
-      <section id="security" aria-label="Security and compliance" className="py-24 bg-gray-900 text-white">
+      <section id="security" aria-label="Security and compliance" className="py-20 sm:py-24 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-sm text-[#4CBD90] font-medium mb-4">
-              <Shield className="w-4 h-4" />
+            <p className="text-[11.5px] font-medium text-[#4CBD90] uppercase tracking-wide mb-3">
               Security & Compliance
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            </p>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-white tracking-tight">
               Your patient data is{' '}
               <span className="text-[#4CBD90]">safe with us</span>
             </h2>
-            <p className="mt-4 text-lg text-gray-400">
+            <p className="mt-3 text-[13px] text-gray-400">
               Healthcare data demands the highest level of protection. Kairo is built with security at its core.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: Lock,
@@ -892,92 +722,113 @@ export default function LandingPage() {
                 description: 'Granular permissions ensure staff only see the data they need. Full audit trail on all actions.',
               },
               {
+                icon: KeyRound,
+                title: 'Sign in with Google',
+                description: 'Staff can sign in with their Google account — OAuth 2.0 with no extra passwords to phish or reuse, backed by Google’s 2-Step Verification.',
+              },
+              {
                 icon: Globe,
                 title: 'Data Sovereignty',
                 description: 'Your data stays in your region. We comply with local healthcare data regulations.',
               },
             ].map((item) => (
               <div key={item.title} className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                <div className="w-12 h-12 rounded-xl bg-[#4CBD90]/10 flex items-center justify-center mb-4">
-                  <item.icon className="w-6 h-6 text-[#4CBD90]" />
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-4">
+                  <item.icon className="w-5 h-5 text-[#4CBD90]" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{item.description}</p>
+                <h3 className="text-[15px] font-medium text-white mb-2">{item.title}</h3>
+                <p className="text-[13px] text-gray-400 leading-relaxed">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section aria-label="Testimonials" className="py-24">
+      {/* Testimonials — infinite marquee, pauses on hover */}
+      <section aria-label="Testimonials" className="py-20 sm:py-24 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
+            <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
               Testimonials
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            </p>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight">
               Loved by healthcare professionals
             </h2>
           </div>
+        </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                quote: 'Kairo has completely transformed how we run our practice. Appointment management alone has saved us hours every week.',
-                name: 'Dr. T. Moyo',
-                role: 'General Practitioner',
-                rating: 5,
-              },
-              {
-                quote: 'The clinical notes system is exactly what we needed. I can focus on the patient without worrying about documentation.',
-                name: 'Sr. N. Chigumba',
-                role: 'Practice Nurse',
-                rating: 5,
-              },
-              {
-                quote: 'Finally, a practice management system that doesn\'t require a manual to use. The team was up and running in a day.',
-                name: 'Dr. R. Mutasa',
-                role: 'Practice Owner',
-                rating: 5,
-              },
-            ].map((testimonial) => (
-              <div key={testimonial.name} className="p-6 rounded-2xl border border-gray-100 bg-white">
-                <div className="flex items-center gap-1 mb-4">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-gray-700 leading-relaxed mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#03989E] to-[#4CBD90] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {testimonial.name.split(' ').slice(-1)[0][0]}
+        <div
+          className="marquee relative overflow-hidden"
+          style={{
+            maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+          }}
+        >
+          <div className="marquee-track flex w-max">
+            {(() => {
+              const testimonials = [
+                {
+                  quote: 'Kairo has completely transformed how we run our practice. Appointment management alone has saved us hours every week.',
+                  name: 'Dr. T. Moyo',
+                  role: 'General Practitioner',
+                  rating: 5,
+                },
+                {
+                  quote: 'The clinical notes system is exactly what we needed. I can focus on the patient without worrying about documentation.',
+                  name: 'Sr. N. Chigumba',
+                  role: 'Practice Nurse',
+                  rating: 5,
+                },
+                {
+                  quote: 'Finally, a practice management system that doesn\'t require a manual to use. The team was up and running in a day.',
+                  name: 'Dr. R. Mutasa',
+                  role: 'Practice Owner',
+                  rating: 5,
+                },
+              ];
+              // Rendered twice for a seamless -50% translate loop
+              return [...testimonials, ...testimonials].map((testimonial, i) => (
+                <div
+                  key={`${testimonial.name}-${i}`}
+                  aria-hidden={i >= testimonials.length}
+                  className="w-[340px] sm:w-[380px] shrink-0 mr-6 p-6 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 transition-colors"
+                >
+                  <div className="flex items-center gap-1 mb-4">
+                    {Array.from({ length: testimonial.rating }).map((_, s) => (
+                      <Star key={s} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{testimonial.name}</p>
-                    <p className="text-xs text-gray-500">{testimonial.role}</p>
+                  <p className="text-[13px] text-gray-500 leading-relaxed mb-6">&ldquo;{testimonial.quote}&rdquo;</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-[#03989E] font-medium text-[13px]">
+                      {testimonial.name.split(' ').slice(-1)[0][0]}
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-medium text-gray-900">{testimonial.name}</p>
+                      <p className="text-[11.5px] text-gray-500">{testimonial.role}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" aria-label="Pricing plans" className="py-24 bg-gradient-to-br from-gray-50 to-white">
+      <section id="pricing" aria-label="Pricing plans" className="py-20 sm:py-24 bg-gray-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
+            <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
               Pricing
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            </p>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight">
               Simple, transparent pricing
             </h2>
-            <p className="mt-4 text-lg text-gray-600">
+            <p className="mt-3 text-[13px] text-gray-500">
               No hidden fees, no surprises. Pick the plan that fits your practice.
             </p>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-[11.5px] text-gray-400">
               WhatsApp &amp; SMS notifications available as an optional add-on on all plans.
             </p>
           </div>
@@ -1034,43 +885,43 @@ export default function LandingPage() {
             ].map((plan) => (
               <div
                 key={plan.name}
-                className={`relative p-8 rounded-2xl border ${
+                className={`group relative p-8 rounded-2xl border bg-white transition-all duration-300 hover:scale-[1.03] hover:bg-gray-900 hover:border-gray-900 hover:shadow-2xl hover:z-10 ${
                   plan.highlighted
-                    ? 'border-[#03989E] bg-white shadow-xl shadow-[#03989E]/10 scale-105'
-                    : 'border-gray-200 bg-white'
+                    ? 'border-[#03989E]/40'
+                    : 'border-gray-100'
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#03989E] text-white text-xs font-semibold rounded-full">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-white border border-[#03989E]/40 text-[#03989E] text-[11px] font-medium rounded-full">
                     Most Popular
                   </div>
                 )}
-                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
+                <h3 className="text-[15px] font-medium text-gray-900 group-hover:text-white transition-colors duration-300">{plan.name}</h3>
+                <p className="text-[13px] text-gray-500 mt-1 group-hover:text-gray-300 transition-colors duration-300">{plan.description}</p>
                 <div className="mt-4 mb-6">
                   {plan.price === 'Custom' ? (
-                    <span className="text-4xl font-bold text-gray-900">Custom</span>
+                    <span className="text-[2rem] font-medium tracking-tight text-gray-900 group-hover:text-white transition-colors duration-300">Custom</span>
                   ) : (
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                      <span className="text-sm text-gray-500">/month</span>
+                      <span className="text-[2rem] font-medium tracking-tight text-gray-900 group-hover:text-white transition-colors duration-300">${plan.price}</span>
+                      <span className="text-[13px] text-gray-500 group-hover:text-gray-300 transition-colors duration-300">/month</span>
                     </div>
                   )}
                 </div>
                 <Link
                   href={plan.price === 'Custom' ? 'mailto:ashley@kairo.clinic' : '/register'}
-                  className={`block text-center px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
+                  className={`inline-flex w-full items-center justify-center gap-2 text-[13px] font-medium rounded-full px-5 py-2.5 transition-all duration-200 ${
                     plan.highlighted
-                      ? 'bg-[#03989E] text-white hover:bg-[#027A7F] shadow-lg shadow-[#03989E]/25'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      ? 'bg-[#03989E] text-white hover:bg-[#027A7F]'
+                      : 'text-[#03989E] border border-[#03989E]/60 group-hover:bg-[#03989E] group-hover:text-white group-hover:border-[#03989E] hover:!bg-[#027A7F]'
                   }`}
                 >
                   {plan.cta}
                 </Link>
                 <ul className="mt-6 space-y-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-[#4CBD90] flex-shrink-0" />
+                    <li key={feature} className="flex items-center gap-2 text-[13px] text-gray-600 group-hover:text-gray-200 transition-colors duration-300">
+                      <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90] flex-shrink-0" />
                       {feature}
                     </li>
                   ))}
@@ -1081,29 +932,29 @@ export default function LandingPage() {
 
           {/* Messaging Add-On */}
           <div className="mt-12 max-w-3xl mx-auto">
-            <div className="bg-gradient-to-r from-[#E6F7F7] to-[#E8F8F2] rounded-2xl p-6 sm:p-8 border border-[#03989E]/10">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-[#03989E]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
                   <MessageSquare className="w-5 h-5 text-[#03989E]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">WhatsApp &amp; SMS Notifications</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                  <h3 className="text-[15px] font-medium text-gray-900 mb-1">WhatsApp &amp; SMS Notifications</h3>
+                  <p className="text-[13px] text-gray-500 leading-relaxed mb-3">
                     Add automated appointment reminders, confirmations, and custom patient messages via WhatsApp and SMS.
                     Available on all plans as an optional add-on.
                   </p>
-                  <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex flex-wrap gap-4 text-[13px]">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-[#4CBD90]" />
-                      <span className="text-gray-700">Pay-per-message pricing</span>
+                      <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90]" />
+                      <span className="text-gray-600">Pay-per-message pricing</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-[#4CBD90]" />
-                      <span className="text-gray-700">No monthly minimum</span>
+                      <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90]" />
+                      <span className="text-gray-600">No monthly minimum</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-[#4CBD90]" />
-                      <span className="text-gray-700">WhatsApp + SMS + Email</span>
+                      <CheckCircle className="w-3.5 h-3.5 text-[#4CBD90]" />
+                      <span className="text-gray-600">WhatsApp + SMS + Email</span>
                     </div>
                   </div>
                 </div>
@@ -1114,13 +965,13 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" aria-label="Frequently asked questions" className="py-24">
+      <section id="faq" aria-label="Frequently asked questions" className="py-20 sm:py-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E6F7F7] rounded-full text-sm text-[#03989E] font-medium mb-4">
+            <p className="text-[11.5px] font-medium text-[#03989E] uppercase tracking-wide mb-3">
               FAQ
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            </p>
+            <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-gray-900 tracking-tight">
               Frequently asked questions
             </h2>
           </div>
@@ -1152,12 +1003,12 @@ export default function LandingPage() {
                 answer: 'Yes! Kairo offers a free 2-day trial with no credit card required. You can explore all features and start managing your practice right away. If you need more time or a personalised walkthrough, you can also request a demo.',
               },
             ].map((faq) => (
-              <details key={faq.question} className="group rounded-2xl border border-gray-200 bg-white">
-                <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-left text-base font-semibold text-gray-900 hover:text-[#03989E] transition-colors [&::-webkit-details-marker]:hidden list-none">
+              <details key={faq.question} className="group rounded-2xl border border-gray-100 bg-white">
+                <summary className="flex items-center justify-between cursor-pointer px-6 py-5 text-left text-[14px] font-medium text-gray-900 hover:text-[#03989E] transition-colors [&::-webkit-details-marker]:hidden list-none">
                   {faq.question}
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-open:rotate-90 transition-transform flex-shrink-0 ml-4" />
+                  <ChevronRight className="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform flex-shrink-0 ml-4" />
                 </summary>
-                <div className="px-6 pb-5 text-gray-600 leading-relaxed">
+                <div className="px-6 pb-5 text-[13px] text-gray-500 leading-relaxed">
                   {faq.answer}
                 </div>
               </details>
@@ -1167,31 +1018,35 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section aria-label="Get started" className="py-24">
+      <section aria-label="Get started" className="py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl bg-gradient-to-br from-[#03989E] to-[#027A7F] p-12 sm:p-16 text-center overflow-hidden">
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl" />
-              <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4CBD90] rounded-full blur-3xl" />
-            </div>
+          <div className="relative rounded-3xl bg-gray-900 p-12 sm:p-16 text-center overflow-hidden">
+            <Image
+              src="/notes-writing.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 1280px) 100vw, 1280px"
+              className="object-cover opacity-60"
+              aria-hidden="true"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/55 to-gray-900/25" aria-hidden="true" />
             <div className="relative z-10">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              <h2 className="text-[1.5rem] sm:text-[1.75rem] leading-[1.15] font-medium text-white tracking-tight">
                 Ready to transform your practice?
               </h2>
-              <p className="mt-4 text-lg text-teal-100 max-w-2xl mx-auto">
+              <p className="mt-3 text-[13px] text-gray-400 max-w-2xl mx-auto">
                 Join healthcare practices that have already made the switch to Kairo.
                 Start your free 2-day trial today — no credit card required.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   href="/register"
-                  className="inline-flex items-center px-8 py-3.5 bg-white text-[#03989E] text-base font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-lg"
+                  className="inline-flex items-center gap-2 text-[13px] font-medium text-white border border-white/60 rounded-full px-5 py-2.5 hover:bg-white hover:text-gray-900 hover:border-white transition-all duration-200 group"
                 >
                   Start Free Trial
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
                 </Link>
-                <RequestDemoButton variant="outline">
+                <RequestDemoButton variant="outline" className="inline-flex items-center gap-2 text-[13px] font-medium text-gray-300 hover:text-white transition-colors duration-200">
                   Request a Demo
                 </RequestDemoButton>
               </div>
@@ -1208,61 +1063,61 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <KairoLogo className="w-9 h-9" />
-                <span className="text-xl font-bold">Kairo</span>
+                <KairoLogo className="w-8 h-8" />
+                <span className="text-[15px] font-medium">Kairo</span>
               </div>
-              <p className="text-sm text-gray-400 leading-relaxed">
+              <p className="text-[12px] text-gray-400 leading-relaxed">
                 Modern practice management software for healthcare professionals. Built to simplify your workflow.
               </p>
               <div className="flex items-center gap-4 mt-5">
                 <a href="https://www.facebook.com/profile.php?id=61587922967714" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" aria-label="Facebook">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 </a>
                 <a href="https://www.instagram.com/kair.osystems/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" aria-label="Instagram">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
                 </a>
                 <a href="https://x.com/kairosystems" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" aria-label="X (Twitter)">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 </a>
                 <a href="https://www.linkedin.com/company/kairo-clinic/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors" aria-label="LinkedIn">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                 </a>
               </div>
             </div>
             <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Product</h4>
+              <h4 className="text-[12px] font-medium text-gray-400 uppercase tracking-wide mb-4">Product</h4>
               <ul className="space-y-2">
-                <li><a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="#security" className="text-sm text-gray-400 hover:text-white transition-colors">Security</a></li>
-                <li><Link href="/legal" className="text-sm text-gray-400 hover:text-white transition-colors">Documentation</Link></li>
-                <li><Link href="/blog" className="text-sm text-gray-400 hover:text-white transition-colors">Blog</Link></li>
+                <li><a href="#features" className="text-[12px] text-gray-400 hover:text-white transition-colors">Features</a></li>
+                <li><a href="#pricing" className="text-[12px] text-gray-400 hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#security" className="text-[12px] text-gray-400 hover:text-white transition-colors">Security</a></li>
+                <li><Link href="/legal" className="text-[12px] text-gray-400 hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link href="/blog" className="text-[12px] text-gray-400 hover:text-white transition-colors">Blog</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Legal</h4>
+              <h4 className="text-[12px] font-medium text-gray-400 uppercase tracking-wide mb-4">Legal</h4>
               <ul className="space-y-2">
-                <li><Link href="/privacy-policy" className="text-sm text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
-                <li><Link href="/data-processing-agreement" className="text-sm text-gray-400 hover:text-white transition-colors">Data Processing Agreement</Link></li>
-                <li><Link href="/patient-consent-form" className="text-sm text-gray-400 hover:text-white transition-colors">Patient Consent Form</Link></li>
+                <li><Link href="/privacy-policy" className="text-[12px] text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-[12px] text-gray-400 hover:text-white transition-colors">Terms &amp; Conditions</Link></li>
+                <li><Link href="/data-processing-agreement" className="text-[12px] text-gray-400 hover:text-white transition-colors">Data Processing Agreement</Link></li>
+                <li><Link href="/patient-consent-form" className="text-[12px] text-gray-400 hover:text-white transition-colors">Patient Consent Form</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Contact</h4>
+              <h4 className="text-[12px] font-medium text-gray-400 uppercase tracking-wide mb-4">Contact</h4>
               <ul className="space-y-2">
                 <li>
-                  <a href="mailto:ashley@kairo.clinic" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <a href="mailto:ashley@kairo.clinic" className="text-[12px] text-gray-400 hover:text-white transition-colors">
                     ashley@kairo.clinic
                   </a>
                 </li>
                 <li>
-                  <a href="tel:+263785767099" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <a href="tel:+263785767099" className="text-[12px] text-gray-400 hover:text-white transition-colors">
                     +263 785 767 099
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:support@kairo.clinic" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  <a href="mailto:support@kairo.clinic" className="text-[12px] text-gray-400 hover:text-white transition-colors">
                     support@kairo.clinic
                   </a>
                 </li>
@@ -1270,13 +1125,13 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-[11.5px] text-gray-500">
               &copy; {new Date().getFullYear()} Kairo Systems. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
-              <Link href="/privacy-policy" className="text-sm text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
-              <Link href="/terms" className="text-sm text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
-              <Link href="/legal" className="text-sm text-gray-500 hover:text-white transition-colors">Legal</Link>
+              <Link href="/privacy-policy" className="text-[11.5px] text-gray-500 hover:text-white transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="text-[11.5px] text-gray-500 hover:text-white transition-colors">Terms of Service</Link>
+              <Link href="/legal" className="text-[11.5px] text-gray-500 hover:text-white transition-colors">Legal</Link>
             </div>
           </div>
         </div>

@@ -231,22 +231,48 @@ export class PrescriptionsService {
       updateData.issuedAt = new Date(data.issuedAt);
     }
 
-    // If items are provided, delete existing and recreate
+    // If items are provided, delete existing and recreate within a transaction
     if (data.items) {
-      await this.prisma.prescriptionItem.deleteMany({
-        where: { prescriptionId: prescription.id },
-      });
+      const items = data.items;
+      return this.prisma.$transaction(async (tx) => {
+        await tx.prescriptionItem.deleteMany({
+          where: { prescriptionId: prescription.id },
+        });
 
-      updateData.items = {
-        create: data.items.map((item) => ({
-          medicationName: item.medicationName,
-          dose: item.dose,
-          frequency: item.frequency,
-          duration: item.duration,
-          quantity: item.quantity,
-          instructions: item.instructions,
-        })),
-      };
+        return tx.prescription.update({
+          where: { id: prescription.id },
+          data: {
+            ...updateData,
+            items: {
+              create: items.map((item) => ({
+                medicationName: item.medicationName,
+                dose: item.dose,
+                frequency: item.frequency,
+                duration: item.duration,
+                quantity: item.quantity,
+                instructions: item.instructions,
+              })),
+            },
+          },
+          include: {
+            items: true,
+            patient: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            prescriber: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        });
+      });
     }
 
     return this.prisma.prescription.update({

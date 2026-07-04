@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -86,6 +87,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('user', JSON.stringify(response.user));
       }
+      // Token is stored either way so an expired-trial admin can still
+      // reach the billing endpoint and subscribe from the lockout screen.
+      if (response.trial?.trialExpired) {
+        throw new Error('TRIAL_EXPIRED');
+      }
+      router.push('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.googleLogin(credential);
+      setUser(response.user);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      if (response.trial?.trialExpired) {
+        throw new Error('TRIAL_EXPIRED');
+      }
       router.push('/dashboard');
     } finally {
       setIsLoading(false);
@@ -105,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
+        loginWithGoogle,
         logout,
         refreshUser,
       }}

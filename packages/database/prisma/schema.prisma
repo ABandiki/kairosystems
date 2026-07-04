@@ -90,6 +90,7 @@ enum AlertType {
   SAFEGUARDING
   MEDICAL
   COMMUNICATION
+  TRADITIONAL_MEDICINE
   OTHER
 }
 
@@ -124,6 +125,28 @@ enum SubscriptionTier {
   CUSTOM         // Custom staff limit (set by super admin)
 }
 
+enum TraditionalMedicineCategory {
+  HERBAL       // Plant-based remedies (teas, decoctions, tinctures)
+  DIETARY      // Food-based / nutritional practices
+  SPIRITUAL    // Faith-based or ancestral healing practices
+  PHYSICAL     // Cupping, steaming, massage, incisions
+  OTHER
+}
+
+enum TraditionalMedicineStatus {
+  CURRENT      // Patient is actively using
+  PAST         // Historical use
+}
+
+enum TraditionalPractitionerType {
+  SELF_ADMINISTERED               // Patient sources/prepares it themselves
+  HERBALIST                       // Community herbalist
+  TRADITIONAL_HEALTH_PRACTITIONER // Registered/recognised THP (e.g. n'anga, inyanga, sangoma)
+  FAITH_HEALER                    // Faith-based practitioner
+  FAMILY_COMMUNITY                // Prepared by family or community member
+  UNKNOWN
+}
+
 // ==================== MODELS ====================
 
 // Practice - supports multi-tenancy
@@ -153,6 +176,10 @@ model Practice {
   // Trial
   isTrial             Boolean  @default(true)
   trialEndsAt         DateTime?
+
+  // Stripe billing
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?
 
   // Settings
   isActive      Boolean  @default(true)
@@ -184,6 +211,7 @@ model Practice {
   messageTemplates MessageTemplate[]
   messageLogs      MessageLog[]
   notifications    Notification[]
+  traditionalMedicineRecords TraditionalMedicineRecord[]
 
   @@map("practices")
 }
@@ -358,6 +386,7 @@ model User {
   deviceLastUsedBy  Device[]        @relation("DeviceLastUser")
   sentMessages      MessageLog[]    @relation("SentMessages")
   notifications     Notification[]  @relation("UserNotifications")
+  recordedTraditionalMedicine TraditionalMedicineRecord[] @relation("RecordedTraditionalMedicine")
 
   @@map("users")
 }
@@ -429,6 +458,7 @@ model Patient {
   formSubmissions     FormSubmission[]
   invoices            Invoice[]
   messageLogs         MessageLog[]
+  traditionalMedicine TraditionalMedicineRecord[]
 
   @@index([practiceId, lastName, firstName])
   @@index([patientNumber])
@@ -449,6 +479,48 @@ model PatientAlert {
   patient     Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@map("patient_alerts")
+}
+
+// Traditional & complementary medicine use, recorded alongside conventional care.
+// Captures what a patient is taking/receiving outside the formal system so
+// clinicians can see the full treatment picture and flag interaction risks.
+model TraditionalMedicineRecord {
+  id             String  @id @default(cuid())
+  practiceId     String
+  patientId      String
+  recordedById   String
+  consultationId String?
+
+  remedyName     String                      // Common name e.g. "African potato (Hypoxis)"
+  localName      String?                     // Local name e.g. "Zumbani", "Umhlonyane"
+  category       TraditionalMedicineCategory @default(HERBAL)
+  preparation    String?                     // e.g. infusion/tea, decoction, steam, poultice
+  indication     String?                     // What the patient uses it for
+  frequency      String?                     // e.g. "Twice daily", "During illness episodes"
+
+  practitionerType TraditionalPractitionerType @default(UNKNOWN)
+  practitionerName String?
+
+  status         TraditionalMedicineStatus @default(CURRENT)
+  startedAt      DateTime?
+  stoppedAt      DateTime?
+
+  hasInteractionRisk Boolean @default(false) // Flags known/suspected interaction with conventional treatment
+  interactionNotes   String?                 // e.g. "Hypoxis may reduce ARV efficacy — reviewed with patient"
+  notes              String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  practice       Practice      @relation(fields: [practiceId], references: [id])
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  recordedBy     User          @relation("RecordedTraditionalMedicine", fields: [recordedById], references: [id])
+  consultation   Consultation? @relation(fields: [consultationId], references: [id])
+
+  @@index([patientId, status])
+  @@index([practiceId, createdAt])
+  @@map("traditional_medicine_records")
 }
 
 model MedicalHistory {
@@ -537,6 +609,7 @@ model Consultation {
   clinician           User            @relation("ClinicianConsultations", fields: [clinicianId], references: [id])
   prescriptions       Prescription[]
   documents           Document[]
+  traditionalMedicineRecords TraditionalMedicineRecord[]
 
   @@index([patientId, createdAt])
   @@map("consultations")

@@ -267,9 +267,10 @@ export class InvoicesService {
     }
     if (data.notes !== undefined) updateData.notes = data.notes;
 
-    // If items are provided, recalculate totals
+    // If items are provided, recalculate totals and update atomically
     if (data.items) {
-      const subtotal = data.items.reduce(
+      const items = data.items;
+      const subtotal = items.reduce(
         (sum, item) => sum + item.quantity * item.unitPrice,
         0,
       );
@@ -278,20 +279,40 @@ export class InvoicesService {
       updateData.discount = data.discount ?? invoice.discount;
       updateData.total = subtotal + updateData.tax - updateData.discount;
 
-      // Delete existing items and create new ones
-      await this.prisma.invoiceItem.deleteMany({
-        where: { invoiceId: id },
-      });
+      if (data.status === 'PAID') {
+        updateData.paidAt = new Date();
+      }
 
-      await this.prisma.invoiceItem.createMany({
-        data: data.items.map((item) => ({
-          invoiceId: id,
-          description: item.description,
-          code: item.code || '',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.quantity * item.unitPrice,
-        })),
+      return this.prisma.$transaction(async (tx) => {
+        await tx.invoiceItem.deleteMany({
+          where: { invoiceId: id },
+        });
+
+        await tx.invoiceItem.createMany({
+          data: items.map((item) => ({
+            invoiceId: id,
+            description: item.description,
+            code: item.code || '',
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.quantity * item.unitPrice,
+          })),
+        });
+
+        return tx.invoice.update({
+          where: { id },
+          data: updateData,
+          include: {
+            patient: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+            items: true,
+          },
+        });
       });
     } else if (data.tax !== undefined || data.discount !== undefined) {
       updateData.tax = data.tax ?? invoice.tax;
