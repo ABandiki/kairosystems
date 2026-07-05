@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export const SKIP_TRIAL_CHECK_KEY = 'skipTrialCheck';
@@ -14,6 +15,7 @@ export class TrialGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
+    private jwtService: JwtService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -28,7 +30,20 @@ export class TrialGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    // As a global guard, this runs BEFORE the per-controller JwtAuthGuard, so
+    // request.user isn't populated yet. Resolve the practice from the bearer
+    // token ourselves. Missing/invalid token → let the JwtAuthGuard 401 later.
+    let user = request.user;
+    if (!user) {
+      const auth: string | undefined = request.headers?.authorization;
+      if (auth?.startsWith('Bearer ')) {
+        try {
+          user = this.jwtService.verify(auth.slice(7));
+        } catch {
+          return true; // invalid token — downstream auth guard will reject
+        }
+      }
+    }
 
     // Super admins bypass trial check
     if (user?.isSuperAdmin || user?.role === 'SUPER_ADMIN') {

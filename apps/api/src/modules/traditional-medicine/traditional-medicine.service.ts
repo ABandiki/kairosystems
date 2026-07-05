@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { CreateTraditionalMedicineDto } from './dto/create-traditional-medicine.dto';
 import { UpdateTraditionalMedicineDto } from './dto/update-traditional-medicine.dto';
+import { assertRefsInPractice } from '../../common/validators/practice-scope.validator';
 
 @Injectable()
 export class TraditionalMedicineService {
@@ -115,6 +116,11 @@ export class TraditionalMedicineService {
     userId: string,
     data: CreateTraditionalMedicineDto,
   ) {
+    await assertRefsInPractice(this.prisma, practiceId, {
+      patientId: data.patientId,
+      consultationId: data.consultationId,
+    });
+
     const record = await this.prisma.traditionalMedicineRecord.create({
       data: {
         remedyName: data.remedyName,

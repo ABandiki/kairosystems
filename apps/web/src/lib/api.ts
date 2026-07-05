@@ -92,6 +92,7 @@ export interface Appointment {
 export interface Staff {
   id: string;
   email: string;
+  password?: string; // only sent on create, never returned
   firstName: string;
   lastName: string;
   role: string;
@@ -1123,29 +1124,30 @@ export const staffUsageApi = {
 // Prescription types
 export interface PrescriptionItem {
   id?: string;
-  medication: string;
-  dosage: string;
+  medicationName: string;
+  dose: string;
   frequency: string;
-  route?: string;
-  quantity?: number;
-  unit?: string;
+  duration: string;
+  quantity: number;
   instructions?: string;
 }
 
 export interface Prescription {
   id: string;
   type: 'ACUTE' | 'REPEAT';
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
-  startDate: string;
-  endDate?: string;
-  reviewDate?: string;
-  notes?: string;
+  status: 'PENDING' | 'ISSUED' | 'DISPENSED' | 'CANCELLED';
   issuedAt: string;
+  createdAt?: string;
   items: PrescriptionItem[];
   patientId: string;
   patientName?: string;
   prescriberId: string;
   prescriberName?: string;
+  // Not persisted by the current API — present only so legacy views compile.
+  startDate?: string;
+  endDate?: string;
+  reviewDate?: string;
+  notes?: string;
 }
 
 // Prescriptions API

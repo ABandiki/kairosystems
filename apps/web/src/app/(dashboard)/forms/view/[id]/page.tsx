@@ -405,30 +405,33 @@ export default function FormViewPage() {
       return;
     }
 
+    // Sample/demo templates aren't backed by a real template record, so a
+    // submission cannot be saved. Don't pretend it was — tell the user.
+    if (isMockTemplate) {
+      toast.error(
+        'This is a sample template and cannot record submissions. Create it under "My Forms" to capture patient responses.',
+      );
+      return;
+    }
+
     setSubmitting(true);
     const score = calculateScore();
     if (score !== null) setTotalScore(score);
 
     try {
-      // For mock templates, use the mock template name as a reference
-      const templateId = isMockTemplate ? formId : formId;
+      const scoreDetails = score !== null ? {
+        totalScore: score,
+        maxPossibleScore: template.questions?.length ? (template.questions.length - 1) * 3 : 0,
+        questionScores: [],
+      } : undefined;
 
-      // Only submit to API if we have a real template ID (not mock)
-      if (!isMockTemplate) {
-        const scoreDetails = score !== null ? {
-          totalScore: score,
-          maxPossibleScore: template.questions?.length ? (template.questions.length - 1) * 3 : 0,
-          questionScores: [],
-        } : undefined;
-
-        await formSubmissionsApi.create({
-          templateId,
-          patientId: selectedPatient.id,
-          answers: responses,
-          score: score ?? undefined,
-          scoreDetails,
-        });
-      }
+      await formSubmissionsApi.create({
+        templateId: formId,
+        patientId: selectedPatient.id,
+        answers: responses,
+        score: score ?? undefined,
+        scoreDetails,
+      });
 
       setSubmitted(true);
       toast.success("Form submitted successfully!");

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { usePatients } from '@/hooks/use-api';
 import { useAuth } from '@/hooks/use-auth';
+import { invoicesApi } from '@/lib/api';
 
 interface InvoiceItem {
   id: string;
@@ -25,42 +26,6 @@ interface InvoiceItem {
   quantity: number;
   unitPrice: number;
 }
-
-// Mock invoice data - in production this would come from API
-const mockInvoice = {
-  id: 'INV-2026-001',
-  patientId: 'pat-001',
-  appointmentId: '',
-  issueDate: '2026-02-01',
-  dueDate: '2026-03-01',
-  paymentMethod: 'Card',
-  items: [
-    {
-      id: '1',
-      description: 'GP Consultation',
-      code: 'GP-CON',
-      quantity: 1,
-      unitPrice: 85.00,
-    },
-    {
-      id: '2',
-      description: 'Blood Test',
-      code: 'LAB-001',
-      quantity: 1,
-      unitPrice: 45.00,
-    },
-    {
-      id: '3',
-      description: 'Prescription Fee',
-      code: 'RX-001',
-      quantity: 1,
-      unitPrice: 20.00,
-    },
-  ],
-  tax: 0,
-  discount: 0,
-  notes: 'Thank you for your payment.',
-};
 
 export default function EditInvoicePage() {
   const router = useRouter();
@@ -80,23 +45,42 @@ export default function EditInvoicePage() {
   const [tax, setTax] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
 
-  // Load invoice data on mount
+  // Load the real invoice on mount
   useEffect(() => {
-    // In production, fetch invoice by ID
-    const invoice = mockInvoice;
-    setPatientId(invoice.patientId);
-    setAppointmentId(invoice.appointmentId);
-    setIssueDate(invoice.issueDate);
-    setDueDate(invoice.dueDate);
-    setPaymentMethod(invoice.paymentMethod);
-    setInvoiceNumber(invoice.id);
-    setNotes(invoice.notes);
-    setTax(invoice.tax);
-    setDiscount(invoice.discount);
-    setItems(invoice.items);
-  }, [invoiceId]);
+    if (!canFetch || !invoiceId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const inv = await invoicesApi.getById(invoiceId);
+        if (cancelled) return;
+        setPatientId(inv.patientId || '');
+        setIssueDate(inv.issueDate ? inv.issueDate.slice(0, 10) : '');
+        setDueDate(inv.dueDate ? inv.dueDate.slice(0, 10) : '');
+        setPaymentMethod(inv.paymentMethod || '');
+        setInvoiceNumber(inv.invoiceNumber || inv.id);
+        setNotes(inv.notes || '');
+        setTax(inv.tax || 0);
+        setDiscount(inv.discount || 0);
+        setItems(
+          (inv.items || []).map((it) => ({
+            id: it.id,
+            description: it.description,
+            code: it.code || '',
+            quantity: it.quantity,
+            unitPrice: it.unitPrice,
+          })),
+        );
+      } catch (err) {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load invoice');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceId, canFetch]);
 
   const patients = patientsData?.data || [];
 
@@ -136,31 +120,27 @@ export default function EditInvoicePage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setLoadError('');
     try {
-      // In production, this would call an API to update the invoice
-      console.log('Updating invoice:', {
-        id: invoiceId,
-        patientId,
-        appointmentId,
+      await invoicesApi.update(invoiceId, {
         issueDate,
         dueDate,
         paymentMethod,
-        invoiceNumber,
         notes,
-        items,
-        subtotal,
         tax,
         discount,
-        total,
-      });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Navigate back to invoice view
+        items: items.map((it) => ({
+          id: it.id,
+          description: it.description,
+          code: it.code || undefined,
+          quantity: it.quantity,
+          unitPrice: it.unitPrice,
+          total: it.quantity * it.unitPrice,
+        })),
+      } as any);
       router.push(`/billing/${invoiceId}`);
     } catch (error) {
-      console.error('Error updating invoice:', error);
+      setLoadError(error instanceof Error ? error.message : 'Failed to update invoice');
     } finally {
       setIsSubmitting(false);
     }
@@ -182,6 +162,12 @@ export default function EditInvoicePage() {
           <p className="text-gray-500">{invoiceNumber}</p>
         </div>
       </div>
+
+      {loadError && (
+        <div className="max-w-4xl mx-auto p-3 rounded-lg border bg-red-50 border-red-200 text-red-700 text-sm">
+          {loadError}
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Patient & Appointment Selection */}

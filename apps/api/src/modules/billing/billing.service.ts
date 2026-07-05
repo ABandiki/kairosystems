@@ -163,8 +163,12 @@ export class BillingService {
       where: { id: practiceId },
       data: {
         stripeSubscriptionId: sub.id,
-        ...(isHealthy && { isTrial: false }),
         subscriptionEndDate: periodEnd ? new Date(periodEnd * 1000) : undefined,
+        ...(isHealthy
+          ? { isTrial: false, isActive: true }
+          : // canceled / unpaid / incomplete_expired via an "updated" event:
+            // lock the practice out (back onto an expired trial) until they resubscribe.
+            { isTrial: true, trialEndsAt: new Date() }),
       },
     });
     this.logger.log(`Subscription synced: practice=${practiceId} status=${sub.status}`);

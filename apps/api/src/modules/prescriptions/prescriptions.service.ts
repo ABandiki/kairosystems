@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertRefsInPractice } from '../../common/validators/practice-scope.validator';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -155,6 +156,12 @@ export class PrescriptionsService {
       }>;
     },
   ) {
+    await assertRefsInPractice(this.prisma, practiceId, {
+      patientId: data.patientId,
+      consultationId: data.consultationId,
+      pharmacyId: data.pharmacyId,
+    });
+
     return this.prisma.prescription.create({
       data: {
         practice: { connect: { id: practiceId } },

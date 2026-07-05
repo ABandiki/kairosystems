@@ -2,7 +2,29 @@ import { Injectable, BadRequestException, ConflictException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UserRole, SubscriptionTier, DeviceStatus } from '@prisma/client';
+import { UserRole, SubscriptionTier, DeviceStatus, AppointmentType } from '@prisma/client';
+
+// Default appointment types every new practice starts with (mirrors the seed).
+const DEFAULT_APPOINTMENT_TYPES: {
+  type: AppointmentType;
+  duration: number;
+  color: string;
+  label: string;
+  code: string;
+}[] = [
+  { type: AppointmentType.GP_CONSULTATION, duration: 10, color: '#3B82F6', label: 'GP Consultation', code: 'GP' },
+  { type: AppointmentType.GP_EXTENDED, duration: 20, color: '#8B5CF6', label: 'Extended GP Consultation', code: 'GPX' },
+  { type: AppointmentType.GP_TELEPHONE, duration: 10, color: '#F59E0B', label: 'Telephone Consultation', code: 'GPTEL' },
+  { type: AppointmentType.GP_VIDEO, duration: 10, color: '#10B981', label: 'Video Consultation', code: 'GPVID' },
+  { type: AppointmentType.NURSE_APPOINTMENT, duration: 15, color: '#EC4899', label: 'Nurse Appointment', code: 'NURSE' },
+  { type: AppointmentType.NURSE_CHRONIC_DISEASE, duration: 20, color: '#D946EF', label: 'Chronic Disease Review', code: 'CDR' },
+  { type: AppointmentType.HCA_BLOOD_TEST, duration: 10, color: '#F97316', label: 'Blood Test', code: 'BLOOD' },
+  { type: AppointmentType.HCA_HEALTH_CHECK, duration: 30, color: '#14B8A6', label: 'Health Check', code: 'HEALTH' },
+  { type: AppointmentType.VACCINATION, duration: 10, color: '#06B6D4', label: 'Vaccination', code: 'VAC' },
+  { type: AppointmentType.SMEAR_TEST, duration: 15, color: '#EF4444', label: 'Cervical Screening', code: 'SMEAR' },
+  { type: AppointmentType.MINOR_SURGERY, duration: 30, color: '#6366F1', label: 'Minor Surgery', code: 'SURG' },
+  { type: AppointmentType.HOME_VISIT, duration: 30, color: '#84CC16', label: 'Home Visit', code: 'HOME' },
+];
 
 @Injectable()
 export class OnboardingService {
@@ -111,6 +133,20 @@ export class OnboardingService {
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
         },
+      });
+
+      // 4. Seed default appointment types so the practice can book immediately
+      await tx.appointmentTypeSetting.createMany({
+        data: DEFAULT_APPOINTMENT_TYPES.map((s) => ({
+          practiceId: practice.id,
+          type: s.type,
+          label: s.label,
+          code: s.code,
+          defaultDuration: s.duration,
+          color: s.color,
+          isActive: true,
+          allowedRoles: [UserRole.GP, UserRole.NURSE, UserRole.HCA],
+        })),
       });
 
       return { practice, admin, device };

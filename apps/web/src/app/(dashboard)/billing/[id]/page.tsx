@@ -358,8 +358,16 @@ export default function InvoiceViewPage() {
     };
   };
 
-  const handleSend = () => {
-    alert('Invoice sent to patient email!');
+  const handleSend = async () => {
+    // There is no email-delivery backend yet, so don't claim one. Marking the
+    // invoice as issued (PENDING) is a real action; the user prints/shares it.
+    try {
+      await invoicesApi.update(invoiceId, { status: 'PENDING' as any });
+      alert('Invoice marked as issued. Use "Print" to share it with the patient — email delivery isn\'t available yet.');
+      window.location.reload();
+    } catch {
+      alert('Could not update the invoice. Please try again.');
+    }
   };
 
   const handleStatusChange = async (newStatus: string) => {

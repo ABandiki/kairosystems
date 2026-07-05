@@ -138,13 +138,6 @@ export default function LandingPage() {
                   'Staff Management',
                   'Analytics Dashboard',
                 ],
-                aggregateRating: {
-                  '@type': 'AggregateRating',
-                  ratingValue: '5.0',
-                  reviewCount: '3',
-                  bestRating: '5',
-                  worstRating: '1',
-                },
               },
               {
                 '@type': 'Organization',

@@ -62,29 +62,28 @@ import type { Document as KairoDocument } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
 import { format, parseISO } from 'date-fns';
 
+// Values must match the API's document type enum.
 const DOCUMENT_TYPES = [
   { value: 'LAB_RESULT', label: 'Lab Result' },
-  { value: 'REFERRAL', label: 'Referral' },
-  { value: 'SCAN', label: 'Scan' },
-  { value: 'LETTER', label: 'Letter' },
-  { value: 'CERTIFICATE', label: 'Certificate' },
-  { value: 'CONSENT', label: 'Consent' },
-  { value: 'IMAGE', label: 'Image' },
-  { value: 'PRESCRIPTION', label: 'Prescription' },
-  { value: 'REPORT', label: 'Report' },
+  { value: 'REFERRAL_LETTER', label: 'Referral Letter' },
+  { value: 'DISCHARGE_SUMMARY', label: 'Discharge Summary' },
+  { value: 'SCAN_REPORT', label: 'Scan Report' },
+  { value: 'ECG', label: 'ECG' },
+  { value: 'CONSENT_FORM', label: 'Consent Form' },
+  { value: 'FIT_NOTE', label: 'Fit Note' },
+  { value: 'PATIENT_CORRESPONDENCE', label: 'Patient Correspondence' },
   { value: 'OTHER', label: 'Other' },
 ];
 
 const typeColors: Record<string, string> = {
   LAB_RESULT: 'bg-blue-100 text-blue-800',
-  REFERRAL: 'bg-purple-100 text-purple-800',
-  SCAN: 'bg-cyan-100 text-cyan-800',
-  LETTER: 'bg-amber-100 text-amber-800',
-  CERTIFICATE: 'bg-green-100 text-green-800',
-  CONSENT: 'bg-teal-100 text-teal-800',
-  IMAGE: 'bg-pink-100 text-pink-800',
-  PRESCRIPTION: 'bg-indigo-100 text-indigo-800',
-  REPORT: 'bg-orange-100 text-orange-800',
+  REFERRAL_LETTER: 'bg-purple-100 text-purple-800',
+  DISCHARGE_SUMMARY: 'bg-amber-100 text-amber-800',
+  SCAN_REPORT: 'bg-cyan-100 text-cyan-800',
+  ECG: 'bg-pink-100 text-pink-800',
+  CONSENT_FORM: 'bg-teal-100 text-teal-800',
+  FIT_NOTE: 'bg-green-100 text-green-800',
+  PATIENT_CORRESPONDENCE: 'bg-indigo-100 text-indigo-800',
   OTHER: 'bg-gray-100 text-gray-800',
 };
 
@@ -143,8 +142,8 @@ export default function DocumentsPage() {
   // Stats
   const totalDocuments = documents.length;
   const labResults = documents.filter(d => d.type === 'LAB_RESULT').length;
-  const referrals = documents.filter(d => d.type === 'REFERRAL').length;
-  const otherDocs = documents.filter(d => !['LAB_RESULT', 'REFERRAL'].includes(d.type)).length;
+  const referrals = documents.filter(d => d.type === 'REFERRAL_LETTER').length;
+  const otherDocs = documents.filter(d => !['LAB_RESULT', 'REFERRAL_LETTER'].includes(d.type)).length;
 
   // Fetch patients when dialog opens
   useEffect(() => {
@@ -218,7 +217,7 @@ export default function DocumentsPage() {
       await documentsApi.create({
         patientId: uploadForm.patientId,
         type: uploadForm.type,
-        title: uploadForm.title,
+        name: uploadForm.title,
         description: uploadForm.description || undefined,
         fileName: uploadForm.fileName,
         fileSize: uploadForm.fileSize,

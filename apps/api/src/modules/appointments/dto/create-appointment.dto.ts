@@ -49,10 +49,11 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   scheduledStart: string;
 
-  @ApiProperty({ example: '2024-03-15T09:15:00.000Z' })
+  // Optional — the service computes it from scheduledStart + duration when omitted.
+  @ApiPropertyOptional({ example: '2024-03-15T09:15:00.000Z' })
+  @IsOptional()
   @IsDateString()
-  @IsNotEmpty()
-  scheduledEnd: string;
+  scheduledEnd?: string;
 
   @ApiProperty({ example: 15 })
   @IsNumber()

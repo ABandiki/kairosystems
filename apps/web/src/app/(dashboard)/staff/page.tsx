@@ -92,6 +92,7 @@ export default function StaffPage() {
   const [showNewStaffDialog, setShowNewStaffDialog] = useState(false);
   const [newStaff, setNewStaff] = useState({
     email: '',
+    password: '',
     firstName: '',
     lastName: '',
     role: 'RECEPTIONIST',
@@ -99,6 +100,7 @@ export default function StaffPage() {
     gmcNumber: '',
     nmcNumber: '',
   });
+  const [staffError, setStaffError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Selected staff for view/edit/schedule dialogs
@@ -163,15 +165,31 @@ export default function StaffPage() {
   };
 
   const handleCreateStaff = async () => {
+    setStaffError('');
+    if (!newStaff.email || !newStaff.firstName || !newStaff.lastName) {
+      setStaffError('Name and email are required');
+      return;
+    }
+    if (newStaff.password.length < 8) {
+      setStaffError('Password must be at least 8 characters');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await staffApi.create({
-        ...newStaff,
-        isActive: true,
+        email: newStaff.email,
+        password: newStaff.password,
+        firstName: newStaff.firstName,
+        lastName: newStaff.lastName,
+        role: newStaff.role,
+        phone: newStaff.phone || undefined,
+        gmcNumber: newStaff.gmcNumber || undefined,
+        nmcNumber: newStaff.nmcNumber || undefined,
       });
       setShowNewStaffDialog(false);
       setNewStaff({
         email: '',
+        password: '',
         firstName: '',
         lastName: '',
         role: 'RECEPTIONIST',
@@ -181,7 +199,7 @@ export default function StaffPage() {
       });
       refetch();
     } catch (err) {
-      console.error('Failed to create staff member:', err);
+      setStaffError(err instanceof Error ? err.message : 'Failed to create staff member');
     } finally {
       setIsSubmitting(false);
     }
@@ -432,6 +450,20 @@ export default function StaffPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="staff-password">Temporary Password *</Label>
+              <Input
+                id="staff-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="At least 8 characters"
+                value={newStaff.password}
+                onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
+              />
+              <p className="text-xs text-gray-500">
+                Must include upper &amp; lower case letters and a number. Share it with the staff member to sign in.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="role">Role *</Label>
               <Select
                 value={newStaff.role}
@@ -476,6 +508,11 @@ export default function StaffPage() {
                   value={newStaff.nmcNumber}
                   onChange={(e) => setNewStaff({ ...newStaff, nmcNumber: e.target.value })}
                 />
+              </div>
+            )}
+            {staffError && (
+              <div className="p-3 rounded-lg border bg-red-50 border-red-200 text-red-700 text-sm">
+                {staffError}
               </div>
             )}
           </div>

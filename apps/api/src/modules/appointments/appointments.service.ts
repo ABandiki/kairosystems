@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertRefsInPractice } from '../../common/validators/practice-scope.validator';
 import { Prisma, AppointmentStatus } from '@prisma/client';
 
 @Injectable()
@@ -121,6 +122,12 @@ export class AppointmentsService {
       roomId?: string;
     },
   ) {
+    await assertRefsInPractice(this.prisma, practiceId, {
+      patientId: data.patientId,
+      clinicianId: data.clinicianId,
+      roomId: data.roomId,
+    });
+
     const startDate = new Date(data.scheduledStart);
     const scheduledEnd = new Date(data.scheduledStart);
     scheduledEnd.setMinutes(scheduledEnd.getMinutes() + data.duration);

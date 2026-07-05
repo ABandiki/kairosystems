@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertRefsInPractice } from '../../common/validators/practice-scope.validator';
 import { Prisma, NoteType } from '@prisma/client';
 
 @Injectable()
@@ -130,6 +131,11 @@ export class NotesService {
       appointmentId?: string;
     },
   ) {
+    await assertRefsInPractice(this.prisma, practiceId, {
+      patientId: data.patientId,
+      appointmentId: data.appointmentId,
+    });
+
     return this.prisma.note.create({
       data: {
         title: data.title,

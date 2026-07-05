@@ -9,6 +9,18 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+const DOCUMENT_TYPES = [
+  'LAB_RESULT',
+  'REFERRAL_LETTER',
+  'DISCHARGE_SUMMARY',
+  'SCAN_REPORT',
+  'ECG',
+  'CONSENT_FORM',
+  'FIT_NOTE',
+  'PATIENT_CORRESPONDENCE',
+  'OTHER',
+] as const;
+
 export class CreateDocumentDto {
   @ApiProperty({ example: 'clx1234567890' })
   @IsString()
@@ -20,31 +32,8 @@ export class CreateDocumentDto {
   @IsString()
   consultationId?: string;
 
-  @ApiProperty({
-    example: 'LAB_RESULT',
-    enum: [
-      'LAB_RESULT',
-      'REFERRAL_LETTER',
-      'DISCHARGE_SUMMARY',
-      'SCAN_REPORT',
-      'ECG',
-      'CONSENT_FORM',
-      'FIT_NOTE',
-      'PATIENT_CORRESPONDENCE',
-      'OTHER',
-    ],
-  })
-  @IsIn([
-    'LAB_RESULT',
-    'REFERRAL_LETTER',
-    'DISCHARGE_SUMMARY',
-    'SCAN_REPORT',
-    'ECG',
-    'CONSENT_FORM',
-    'FIT_NOTE',
-    'PATIENT_CORRESPONDENCE',
-    'OTHER',
-  ])
+  @ApiProperty({ example: 'LAB_RESULT', enum: DOCUMENT_TYPES })
+  @IsIn(DOCUMENT_TYPES)
   @IsNotEmpty()
   type: string;
 
@@ -60,18 +49,27 @@ export class CreateDocumentDto {
   @MaxLength(500)
   description?: string;
 
-  @ApiProperty({ example: '/uploads/documents/blood-test-2024.pdf' })
+  // File storage isn't implemented yet — these describe the file metadata only.
+  // filePath is generated server-side when omitted.
+  @ApiPropertyOptional({ example: 'blood-test-2024.pdf' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  filePath: string;
+  @MaxLength(255)
+  fileName?: string;
 
-  @ApiProperty({ example: 204800 })
+  @ApiPropertyOptional({ example: '/uploads/documents/blood-test-2024.pdf' })
+  @IsOptional()
+  @IsString()
+  filePath?: string;
+
+  @ApiPropertyOptional({ example: 204800 })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  fileSize: number;
+  fileSize?: number;
 
-  @ApiProperty({ example: 'application/pdf' })
+  @ApiPropertyOptional({ example: 'application/pdf' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  mimeType: string;
+  mimeType?: string;
 }

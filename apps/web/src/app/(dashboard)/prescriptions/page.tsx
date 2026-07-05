@@ -63,10 +63,10 @@ const typeColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-800',
-  COMPLETED: 'bg-gray-100 text-gray-800',
+  PENDING: 'bg-amber-100 text-amber-800',
+  ISSUED: 'bg-green-100 text-green-800',
+  DISPENSED: 'bg-gray-100 text-gray-800',
   CANCELLED: 'bg-red-100 text-red-800',
-  EXPIRED: 'bg-orange-100 text-orange-800',
 };
 
 const FREQUENCY_OPTIONS = [
@@ -78,22 +78,12 @@ const FREQUENCY_OPTIONS = [
   'Weekly',
 ];
 
-const ROUTE_OPTIONS = [
-  'Oral',
-  'Topical',
-  'Inhaled',
-  'Injection',
-  'Rectal',
-  'Sublingual',
-];
-
 const emptyItem: PrescriptionItem = {
-  medication: '',
-  dosage: '',
+  medicationName: '',
+  dose: '',
   frequency: 'Once daily',
-  route: 'Oral',
-  quantity: undefined,
-  unit: '',
+  duration: '7 days',
+  quantity: 1,
   instructions: '',
 };
 
@@ -138,14 +128,11 @@ export default function PrescriptionsPage() {
 
   const prescriptions = prescriptionsData?.data || [];
 
-  // Calculate stats
-  const totalActive = prescriptions.filter(p => p.status === 'ACTIVE').length;
-  const repeatCount = prescriptions.filter(p => p.type === 'REPEAT' && p.status === 'ACTIVE').length;
-  const dueForReview = prescriptions.filter(p => {
-    if (!p.reviewDate || p.status !== 'ACTIVE') return false;
-    return new Date(p.reviewDate) <= new Date();
-  }).length;
-  const expiredCount = prescriptions.filter(p => p.status === 'EXPIRED').length;
+  // Calculate stats (backend statuses: PENDING, ISSUED, DISPENSED, CANCELLED)
+  const totalActive = prescriptions.filter(p => p.status === 'PENDING' || p.status === 'ISSUED').length;
+  const repeatCount = prescriptions.filter(p => p.type === 'REPEAT').length;
+  const dispensedCount = prescriptions.filter(p => p.status === 'DISPENSED').length;
+  const expiredCount = prescriptions.filter(p => p.status === 'CANCELLED').length;
 
   // Fetch patients when dialog opens
   useEffect(() => {
@@ -228,21 +215,27 @@ export default function PrescriptionsPage() {
       toast.warning('Please select a patient');
       return;
     }
-    if (formData.items.length === 0 || !formData.items[0].medication) {
+    if (formData.items.length === 0 || !formData.items[0].medicationName) {
       toast.warning('Please add at least one medication');
       return;
     }
 
     setSubmitting(true);
     try {
+      // Send only fields the API accepts (patientId, type, items).
       await prescriptionsApi.create({
         patientId: formData.patientId,
         type: formData.type,
-        startDate: formData.startDate,
-        endDate: formData.endDate || undefined,
-        reviewDate: formData.reviewDate || undefined,
-        notes: formData.notes || undefined,
-        items: formData.items.filter(item => item.medication),
+        items: formData.items
+          .filter(item => item.medicationName)
+          .map(item => ({
+            medicationName: item.medicationName,
+            dose: item.dose,
+            frequency: item.frequency,
+            duration: item.duration,
+            quantity: item.quantity || 1,
+            instructions: item.instructions || undefined,
+          })),
       });
       toast.success('Prescription created', 'The prescription has been saved successfully.');
       setShowNewDialog(false);
@@ -374,8 +367,8 @@ export default function PrescriptionsPage() {
                 <Clock className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Due for Review</p>
-                <p className="text-2xl font-bold text-gray-900">{dueForReview}</p>
+                <p className="text-sm text-gray-500">Dispensed</p>
+                <p className="text-2xl font-bold text-gray-900">{dispensedCount}</p>
               </div>
             </div>
           </CardContent>
@@ -388,7 +381,7 @@ export default function PrescriptionsPage() {
                 <AlertTriangle className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Expired</p>
+                <p className="text-sm text-gray-500">Cancelled</p>
                 <p className="text-2xl font-bold text-gray-900">{expiredCount}</p>
               </div>
             </div>
@@ -463,7 +456,7 @@ export default function PrescriptionsPage() {
                   <TableCell>
                     <div>
                       <p className="font-medium">
-                        {prescription.items[0]?.medication || 'No medication'}
+                        {prescription.items[0]?.medicationName || 'No medication'}
                       </p>
                       {prescription.items.length > 1 && (
                         <p className="text-xs text-gray-500">
@@ -482,7 +475,7 @@ export default function PrescriptionsPage() {
                       {prescription.status.charAt(0) + prescription.status.slice(1).toLowerCase()}
                     </Badge>
                   </TableCell>
-                  <TableCell>{formatDate(prescription.startDate)}</TableCell>
+                  <TableCell>{formatDate(prescription.issuedAt || prescription.createdAt || '')}</TableCell>
                   <TableCell>
                     {prescription.reviewDate ? (
                       <span className={
@@ -692,16 +685,16 @@ export default function PrescriptionsPage() {
                         <Label className="text-xs">Medication Name *</Label>
                         <Input
                           placeholder="e.g. Amoxicillin"
-                          value={item.medication}
-                          onChange={(e) => updateItem(index, 'medication', e.target.value)}
+                          value={item.medicationName}
+                          onChange={(e) => updateItem(index, 'medicationName', e.target.value)}
                         />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Dosage *</Label>
                         <Input
                           placeholder="e.g. 500mg"
-                          value={item.dosage}
-                          onChange={(e) => updateItem(index, 'dosage', e.target.value)}
+                          value={item.dose}
+                          onChange={(e) => updateItem(index, 'dose', e.target.value)}
                         />
                       </div>
                     </div>
@@ -726,43 +719,27 @@ export default function PrescriptionsPage() {
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Route</Label>
-                        <Select
-                          value={item.route || 'Oral'}
-                          onValueChange={(value) => updateItem(index, 'route', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ROUTE_OPTIONS.map((route) => (
-                              <SelectItem key={route} value={route}>
-                                {route}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-xs">Duration *</Label>
+                        <Input
+                          placeholder="e.g. 7 days"
+                          value={item.duration}
+                          onChange={(e) => updateItem(index, 'duration', e.target.value)}
+                        />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label className="text-xs">Quantity</Label>
+                        <Label className="text-xs">Quantity *</Label>
                         <Input
                           type="number"
+                          min={1}
                           placeholder="e.g. 28"
                           value={item.quantity ?? ''}
-                          onChange={(e) => updateItem(index, 'quantity', e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={(e) => updateItem(index, 'quantity', e.target.value ? Number(e.target.value) : 1)}
                         />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Unit</Label>
-                        <Input
-                          placeholder="e.g. tablets"
-                          value={item.unit || ''}
-                          onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                        />
-                      </div>
+                      <div className="space-y-1" />
                     </div>
 
                     <div className="space-y-1">
@@ -837,7 +814,7 @@ export default function PrescriptionsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Start Date</p>
-                  <p className="font-medium">{formatDate(selectedPrescription.startDate)}</p>
+                  <p className="font-medium">{formatDate(selectedPrescription.issuedAt || selectedPrescription.createdAt || '')}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">End Date</p>
@@ -872,14 +849,14 @@ export default function PrescriptionsPage() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-medium text-gray-900">{item.medication}</p>
+                            <p className="font-medium text-gray-900">{item.medicationName}</p>
                             <p className="text-sm text-gray-600">
-                              {item.dosage} - {item.frequency}
-                              {item.route ? ` (${item.route})` : ''}
+                              {item.dose} - {item.frequency}
+                              {item.duration ? ` for ${item.duration}` : ''}
                             </p>
                             {item.quantity && (
                               <p className="text-sm text-gray-500">
-                                Qty: {item.quantity} {item.unit || ''}
+                                Qty: {item.quantity}
                               </p>
                             )}
                             {item.instructions && (

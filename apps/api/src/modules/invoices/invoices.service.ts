@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertRefsInPractice } from '../../common/validators/practice-scope.validator';
 import { InvoiceStatus, PaymentMethod, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -181,6 +182,11 @@ export class InvoicesService {
       discount?: number;
     },
   ) {
+    await assertRefsInPractice(this.prisma, practiceId, {
+      patientId: data.patientId,
+      appointmentId: data.appointmentId,
+    });
+
     const subtotal = data.items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
       0,

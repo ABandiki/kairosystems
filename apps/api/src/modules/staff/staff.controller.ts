@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
@@ -21,7 +23,7 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 
 @ApiTags('staff')
 @Controller('staff')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class StaffController {
   constructor(private staffService: StaffService) {}
@@ -52,18 +54,21 @@ export class StaffController {
   }
 
   @Post()
+  @Roles('PRACTICE_ADMIN', 'PRACTICE_MANAGER')
   @ApiOperation({ summary: 'Create a new staff member' })
   async create(@Req() req: AuthenticatedRequest, @Body() data: CreateStaffDto) {
     return this.staffService.create(req.user.practiceId, data);
   }
 
   @Put(':id')
+  @Roles('PRACTICE_ADMIN', 'PRACTICE_MANAGER')
   @ApiOperation({ summary: 'Update staff member details' })
   async update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: UpdateStaffDto) {
     return this.staffService.update(id, req.user.practiceId, data);
   }
 
   @Put(':id/working-hours')
+  @Roles('PRACTICE_ADMIN', 'PRACTICE_MANAGER')
   @ApiOperation({ summary: 'Update staff working hours' })
   async updateWorkingHours(
     @Req() req: AuthenticatedRequest,

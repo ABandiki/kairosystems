@@ -62,16 +62,26 @@ export class DemoRequestsController {
 
     const results = { email: false, whatsapp: false };
 
+    // Escape all user-supplied values before embedding in the notification HTML
+    // to prevent HTML/link injection (and stored XSS if rendered in the admin UI).
+    const esc = (v?: string) =>
+      (v ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
     // Send email notification to ashley@kairo.clinic
     const emailHtml = `
       <h2>New Demo Request</h2>
       <table style="border-collapse:collapse;width:100%;max-width:500px;">
-        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Name</td><td style="padding:8px;border-bottom:1px solid #eee;">${data.name}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Email</td><td style="padding:8px;border-bottom:1px solid #eee;"><a href="mailto:${data.email}">${data.email}</a></td></tr>
-        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Phone</td><td style="padding:8px;border-bottom:1px solid #eee;"><a href="tel:${data.phone}">${data.phone}</a></td></tr>
-        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Practice</td><td style="padding:8px;border-bottom:1px solid #eee;">${data.practiceName}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Size</td><td style="padding:8px;border-bottom:1px solid #eee;">${data.practiceSize || 'Not specified'}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Message</td><td style="padding:8px;border-bottom:1px solid #eee;">${data.message || 'None'}</td></tr>
+        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Name</td><td style="padding:8px;border-bottom:1px solid #eee;">${esc(data.name)}</td></tr>
+        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Email</td><td style="padding:8px;border-bottom:1px solid #eee;">${esc(data.email)}</td></tr>
+        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Phone</td><td style="padding:8px;border-bottom:1px solid #eee;">${esc(data.phone)}</td></tr>
+        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Practice</td><td style="padding:8px;border-bottom:1px solid #eee;">${esc(data.practiceName)}</td></tr>
+        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Size</td><td style="padding:8px;border-bottom:1px solid #eee;">${esc(data.practiceSize) || 'Not specified'}</td></tr>
+        <tr><td style="padding:8px;font-weight:bold;border-bottom:1px solid #eee;">Message</td><td style="padding:8px;border-bottom:1px solid #eee;">${esc(data.message) || 'None'}</td></tr>
       </table>
       <p style="margin-top:16px;color:#666;font-size:13px;">Sent from kairo.clinic landing page</p>
     `;

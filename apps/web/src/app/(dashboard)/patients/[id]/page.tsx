@@ -52,51 +52,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
-import { patientsApi, appointmentsApi, Patient, Appointment, PatientAlert } from '@/lib/api';
+import {
+  patientsApi,
+  appointmentsApi,
+  notesApi,
+  prescriptionsApi,
+  documentsApi,
+  Patient,
+  Appointment,
+  Note,
+  Prescription,
+  Document,
+} from '@/lib/api';
 import { TraditionalMedicineTab } from '@/components/patients/traditional-medicine-tab';
 import { format, parseISO, differenceInYears } from 'date-fns';
-
-// Note interface
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  noteType: string;
-  createdAt: string;
-  createdBy: string;
-  colorCode?: string;
-}
-
-// Mock notes data - in production this would come from API
-const mockNotes: Note[] = [
-  {
-    id: '1',
-    title: 'Initial Consultation',
-    content: 'Patient presented with persistent cough for 2 weeks. No fever. Prescribed cough suppressant and advised to return if symptoms persist.',
-    noteType: 'CONSULTATION',
-    createdAt: '2026-02-01T10:30:00Z',
-    createdBy: 'Dr. Tatenda Chikwanha',
-    colorCode: '#03989E',
-  },
-  {
-    id: '2',
-    title: 'Follow-up Visit',
-    content: 'Cough has improved significantly. Patient reports better sleep. Continue current medication for another week.',
-    noteType: 'FOLLOW_UP',
-    createdAt: '2026-02-03T14:00:00Z',
-    createdBy: 'Dr. Tatenda Chikwanha',
-    colorCode: '#4CBD90',
-  },
-  {
-    id: '3',
-    title: 'Lab Results Review',
-    content: 'Blood test results normal. Cholesterol levels within healthy range. No action required.',
-    noteType: 'LAB_REVIEW',
-    createdAt: '2026-01-28T09:15:00Z',
-    createdBy: 'Nurse Rudo Mutasa',
-    colorCode: '#F59E0B',
-  },
-];
 
 const noteTypeColors: Record<string, string> = {
   CONSULTATION: 'bg-teal-100 text-teal-800',
@@ -140,14 +109,21 @@ export default function PatientDetailPage() {
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [notes, setNotes] = useState<Note[]>(mockNotes);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewNoteDialog, setShowNewNoteDialog] = useState(false);
   const [showNewAlertDialog, setShowNewAlertDialog] = useState(false);
-  const [showUploadDocumentDialog, setShowUploadDocumentDialog] = useState(false);
   const [showPrescriptionDialog, setShowPrescriptionDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    addressLine1: '', city: '', postcode: '', status: 'ACTIVE',
+  });
+  const [actionError, setActionError] = useState('');
   const [newNote, setNewNote] = useState({
     title: '',
     content: '',
@@ -183,13 +159,26 @@ export default function PatientDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Fetch patient details
+      // Patient details are essential — fail the page if this fails
       const patientData = await patientsApi.getById(patientId);
       setPatient(patientData);
 
-      // Fetch patient appointments
-      const appointmentsData = await appointmentsApi.getAll({ patientId });
-      setAppointments(appointmentsData.data || []);
+      // The rest of the chart loads independently; one failing shouldn't blank the page
+      const [appointmentsData, notesData, prescriptionsData, documentsData] =
+        await Promise.allSettled([
+          appointmentsApi.getAll({ patientId }),
+          notesApi.getAll({ patientId, pageSize: 100 }),
+          prescriptionsApi.getAll({ patientId, pageSize: 100 }),
+          documentsApi.getAll({ patientId, pageSize: 100 }),
+        ]);
+
+      if (appointmentsData.status === 'fulfilled')
+        setAppointments(appointmentsData.value.data || []);
+      if (notesData.status === 'fulfilled') setNotes(notesData.value.data || []);
+      if (prescriptionsData.status === 'fulfilled')
+        setPrescriptions(prescriptionsData.value.data || []);
+      if (documentsData.status === 'fulfilled')
+        setDocuments(documentsData.value.data || []);
     } catch (err) {
       console.error('Failed to fetch patient data:', err);
       setError('Failed to load patient details');
@@ -227,33 +216,40 @@ export default function PatientDetailPage() {
     return num;
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (!newNote.title || !newNote.content) return;
 
-    const note: Note = {
-      id: Date.now().toString(),
-      title: newNote.title,
-      content: newNote.content,
-      noteType: newNote.noteType,
-      createdAt: new Date().toISOString(),
-      createdBy: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-      colorCode: newNote.colorCode,
-    };
-
-    setNotes([note, ...notes]);
-    setNewNote({
-      title: '',
-      content: '',
-      noteType: 'CONSULTATION',
-      colorCode: '#03989E',
-    });
-    setShowNewNoteDialog(false);
+    setIsSubmitting(true);
+    setActionError('');
+    try {
+      await notesApi.create({
+        title: newNote.title,
+        content: newNote.content,
+        noteType: newNote.noteType,
+        patientId,
+        colorCode: newNote.colorCode,
+      });
+      const notesData = await notesApi.getAll({ patientId, pageSize: 100 });
+      setNotes(notesData.data || []);
+      setNewNote({
+        title: '',
+        content: '',
+        noteType: 'CONSULTATION',
+        colorCode: '#03989E',
+      });
+      setShowNewNoteDialog(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to save note');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleAddAlert = async () => {
     if (!newAlert.description) return;
 
     setIsSubmitting(true);
+    setActionError('');
     try {
       const alert = await patientsApi.addAlert(patientId, newAlert);
       if (patient) {
@@ -269,14 +265,84 @@ export default function PatientDetailPage() {
       });
       setShowNewAlertDialog(false);
     } catch (err) {
-      console.error('Failed to add alert:', err);
+      setActionError(err instanceof Error ? err.message : 'Failed to add alert');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    setNotes(notes.filter(n => n.id !== noteId));
+  const handleAddPrescription = async () => {
+    if (!newPrescription.medication || !newPrescription.dosage) return;
+
+    setIsSubmitting(true);
+    setActionError('');
+    try {
+      await prescriptionsApi.create({
+        patientId,
+        type: 'ACUTE',
+        items: [
+          {
+            medicationName: newPrescription.medication,
+            dose: newPrescription.dosage,
+            frequency: newPrescription.frequency || 'As directed',
+            duration: newPrescription.duration || 'As directed',
+            quantity: 1,
+            instructions: newPrescription.notes || undefined,
+          },
+        ],
+      });
+      const prescriptionsData = await prescriptionsApi.getAll({ patientId, pageSize: 100 });
+      setPrescriptions(prescriptionsData.data || []);
+      setNewPrescription({ medication: '', dosage: '', frequency: '', duration: '', notes: '' });
+      setShowPrescriptionDialog(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to create prescription');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      await notesApi.delete(noteId);
+      setNotes(notes.filter(n => n.id !== noteId));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to delete note');
+    }
+  };
+
+  const openEditDialog = () => {
+    if (!patient) return;
+    setEditForm({
+      firstName: patient.firstName || '',
+      lastName: patient.lastName || '',
+      email: patient.email || '',
+      phone: patient.phone || '',
+      addressLine1: patient.addressLine1 || '',
+      city: patient.city || '',
+      postcode: patient.postcode || '',
+      status: patient.status || 'ACTIVE',
+    });
+    setActionError('');
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editForm.firstName.trim() || !editForm.lastName.trim()) {
+      setActionError('First and last name are required');
+      return;
+    }
+    setIsSubmitting(true);
+    setActionError('');
+    try {
+      const updated = await patientsApi.update(patientId, editForm);
+      setPatient((prev) => (prev ? { ...prev, ...updated } : updated));
+      setShowEditDialog(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to update patient');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (authLoading || isLoading) {
@@ -354,12 +420,21 @@ export default function PatientDetailPage() {
             <FileText className="h-4 w-4 mr-2" />
             Add Note
           </Button>
-          <Button>
+          <Button onClick={openEditDialog}>
             <Edit className="h-4 w-4 mr-2" />
             Edit Patient
           </Button>
         </div>
       </div>
+
+      {/* Action error banner */}
+      {actionError && (
+        <div className="flex items-center gap-2 p-3 rounded-lg border bg-red-50 border-red-200 text-red-700 text-sm">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>{actionError}</span>
+          <button className="ml-auto text-red-400 hover:text-red-600" onClick={() => setActionError('')}>✕</button>
+        </div>
+      )}
 
       {/* Alerts Section */}
       {patient.alerts && patient.alerts.length > 0 && (
@@ -685,26 +760,77 @@ export default function PatientDetailPage() {
 
         {/* Documents Tab */}
         <TabsContent value="documents">
-          <div className="bg-white rounded-lg border p-8 text-center">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No documents uploaded for this patient</p>
-            <Button className="mt-4" variant="outline" onClick={() => setShowUploadDocumentDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Upload Document
-            </Button>
-          </div>
+          {documents.length === 0 ? (
+            <div className="bg-white rounded-lg border p-8 text-center">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No documents uploaded for this patient</p>
+              <Button className="mt-4" variant="outline" onClick={() => router.push(`/documents?patientId=${patientId}`)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Manage Documents
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {documents.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-4 bg-white rounded-lg border p-4">
+                  <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-5 w-5 text-[#03989E]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{doc.title || doc.fileName}</p>
+                    <p className="text-xs text-gray-500">
+                      {doc.type} · {formatDate(doc.uploadedAt)}
+                      {doc.uploadedByName ? ` · ${doc.uploadedByName}` : ''}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <Button variant="outline" className="w-full" onClick={() => router.push(`/documents?patientId=${patientId}`)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Manage Documents
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Prescriptions Tab */}
         <TabsContent value="prescriptions">
-          <div className="bg-white rounded-lg border p-8 text-center">
-            <Pill className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No prescriptions recorded for this patient</p>
-            <Button className="mt-4" variant="outline" onClick={() => setShowPrescriptionDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Prescription
-            </Button>
-          </div>
+          {prescriptions.length === 0 ? (
+            <div className="bg-white rounded-lg border p-8 text-center">
+              <Pill className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No prescriptions recorded for this patient</p>
+              <Button className="mt-4" variant="outline" onClick={() => setShowPrescriptionDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Prescription
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {prescriptions.map((rx) => (
+                <div key={rx.id} className="bg-white rounded-lg border p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Pill className="h-4 w-4 text-[#03989E]" />
+                      <span className="text-sm font-medium text-gray-900">{rx.type}</span>
+                      <Badge variant="outline">{rx.status}</Badge>
+                    </div>
+                    <span className="text-xs text-gray-500">{formatDate(rx.issuedAt || rx.createdAt || '')}</span>
+                  </div>
+                  <ul className="space-y-1 pl-6">
+                    {(rx.items || []).map((item, i) => (
+                      <li key={i} className="text-sm text-gray-600">
+                        {item.medicationName} — {item.dose}, {item.frequency}, {item.duration}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <Button variant="outline" className="w-full" onClick={() => setShowPrescriptionDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Prescription
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         {/* Traditional Medicine Tab */}
@@ -871,59 +997,6 @@ export default function PatientDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Upload Document Dialog */}
-      <Dialog open={showUploadDocumentDialog} onOpenChange={setShowUploadDocumentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
-            <DialogDescription>
-              Upload a document for {patient?.firstName} {patient?.lastName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="docType">Document Type</Label>
-              <Select defaultValue="LAB_RESULT">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LAB_RESULT">Lab Result</SelectItem>
-                  <SelectItem value="REFERRAL">Referral Letter</SelectItem>
-                  <SelectItem value="SCAN">Scan/Imaging</SelectItem>
-                  <SelectItem value="CONSENT">Consent Form</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="docTitle">Document Title</Label>
-              <Input id="docTitle" placeholder="e.g., Blood Test Results - Feb 2026" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="docFile">File</Label>
-              <Input id="docFile" type="file" accept=".pdf,.doc,.docx,.jpg,.png" />
-              <p className="text-xs text-gray-500">Accepted formats: PDF, DOC, DOCX, JPG, PNG (max 10MB)</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="docNotes">Notes (optional)</Label>
-              <Textarea id="docNotes" placeholder="Additional notes about this document..." rows={2} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUploadDocumentDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              alert('Document upload feature coming soon! This will integrate with secure file storage.');
-              setShowUploadDocumentDialog(false);
-            }}>
-              Upload Document
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Create Prescription Dialog */}
       <Dialog open={showPrescriptionDialog} onOpenChange={setShowPrescriptionDialog}>
         <DialogContent className="max-w-2xl">
@@ -965,12 +1038,12 @@ export default function PatientDetailPage() {
                     <SelectValue placeholder="Select frequency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="once_daily">Once daily</SelectItem>
-                    <SelectItem value="twice_daily">Twice daily</SelectItem>
-                    <SelectItem value="three_times_daily">Three times daily</SelectItem>
-                    <SelectItem value="four_times_daily">Four times daily</SelectItem>
-                    <SelectItem value="as_needed">As needed (PRN)</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="Once daily">Once daily</SelectItem>
+                    <SelectItem value="Twice daily">Twice daily</SelectItem>
+                    <SelectItem value="Three times daily">Three times daily</SelectItem>
+                    <SelectItem value="Four times daily">Four times daily</SelectItem>
+                    <SelectItem value="As needed (PRN)">As needed (PRN)</SelectItem>
+                    <SelectItem value="Weekly">Weekly</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -984,13 +1057,13 @@ export default function PatientDetailPage() {
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="3_days">3 days</SelectItem>
-                    <SelectItem value="5_days">5 days</SelectItem>
-                    <SelectItem value="7_days">7 days</SelectItem>
-                    <SelectItem value="14_days">14 days</SelectItem>
-                    <SelectItem value="28_days">28 days</SelectItem>
-                    <SelectItem value="3_months">3 months</SelectItem>
-                    <SelectItem value="ongoing">Ongoing</SelectItem>
+                    <SelectItem value="3 days">3 days</SelectItem>
+                    <SelectItem value="5 days">5 days</SelectItem>
+                    <SelectItem value="7 days">7 days</SelectItem>
+                    <SelectItem value="14 days">14 days</SelectItem>
+                    <SelectItem value="28 days">28 days</SelectItem>
+                    <SelectItem value="3 months">3 months</SelectItem>
+                    <SelectItem value="Ongoing">Ongoing</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1011,18 +1084,68 @@ export default function PatientDetailPage() {
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                if (!newPrescription.medication || !newPrescription.dosage || !newPrescription.frequency || !newPrescription.duration) {
-                  alert('Please fill in all required fields');
-                  return;
-                }
-                alert('Prescription created! (Integration with EPS/pharmacy system coming soon)');
-                setNewPrescription({ medication: '', dosage: '', frequency: '', duration: '', notes: '' });
-                setShowPrescriptionDialog(false);
-              }}
-              disabled={!newPrescription.medication || !newPrescription.dosage}
+              onClick={handleAddPrescription}
+              disabled={isSubmitting || !newPrescription.medication || !newPrescription.dosage || !newPrescription.frequency || !newPrescription.duration}
             >
-              Create Prescription
+              {isSubmitting ? 'Saving...' : 'Create Prescription'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Patient Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Patient</DialogTitle>
+            <DialogDescription>Update {patient.firstName} {patient.lastName}&apos;s details</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-firstName">First Name *</Label>
+              <Input id="edit-firstName" value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-lastName">Last Name *</Label>
+              <Input id="edit-lastName" value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input id="edit-email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input id="edit-phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input id="edit-address" value={editForm.addressLine1} onChange={(e) => setEditForm({ ...editForm, addressLine1: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-city">City</Label>
+              <Input id="edit-city" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-postcode">Postcode</Label>
+              <Input id="edit-postcode" value={editForm.postcode} onChange={(e) => setEditForm({ ...editForm, postcode: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="DECEASED">Deceased</SelectItem>
+                  <SelectItem value="TRANSFERRED">Transferred</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>

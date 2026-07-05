@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { assertRefsInPractice } from '../../common/validators/practice-scope.validator';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -159,6 +160,11 @@ export class DocumentsService {
       consultationId?: string;
     },
   ) {
+    await assertRefsInPractice(this.prisma, practiceId, {
+      patientId: data.patientId,
+      consultationId: data.consultationId,
+    });
+
     // Generate a placeholder filePath since actual file storage is not yet implemented
     const fileName = data.fileName || `${data.name.replace(/\s+/g, '_')}.pdf`;
     const filePath = `/uploads/${practiceId}/${data.patientId}/${Date.now()}_${fileName}`;

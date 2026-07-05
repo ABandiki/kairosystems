@@ -2,62 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, FileText, Download, Pencil, Calendar, User, Tag } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, User, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
+import { notesApi, Note } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
-
-// Note interface
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  noteType: string;
-  patientId: string;
-  patientName: string;
-  createdAt: string;
-  createdBy: string;
-  colorCode?: string;
-}
-
-// Mock notes data (same as in notes list page)
-const mockNotes: Note[] = [
-  {
-    id: '1',
-    title: 'Initial Consultation',
-    content: 'Patient presented with persistent cough for 2 weeks. No fever. Prescribed cough suppressant.\n\nExamination findings:\n- Throat slightly red\n- No signs of infection\n- Lungs clear\n\nPlan:\n- Cough suppressant for 7 days\n- Return if symptoms persist or worsen\n- Avoid cold drinks',
-    noteType: 'CONSULTATION',
-    patientId: 'pat-001',
-    patientName: 'Tapiwa Madziva',
-    createdAt: '2026-02-01T10:30:00Z',
-    createdBy: 'Dr. Tatenda Chikwanha',
-    colorCode: '#03989E',
-  },
-  {
-    id: '2',
-    title: 'Follow-up Visit',
-    content: 'Cough has improved significantly. Patient reports better sleep.\n\nProgress:\n- Symptoms reduced by 80%\n- No new complaints\n- Appetite normal\n\nRecommendation:\n- Continue current medication for 3 more days\n- No further follow-up needed unless new symptoms develop',
-    noteType: 'FOLLOW_UP',
-    patientId: 'pat-002',
-    patientName: 'Nyasha Chikowore',
-    createdAt: '2026-02-03T14:00:00Z',
-    createdBy: 'Dr. Tatenda Chikwanha',
-    colorCode: '#4CBD90',
-  },
-  {
-    id: '3',
-    title: 'Lab Results Review',
-    content: 'Blood test results normal. Cholesterol levels within healthy range.\n\nResults Summary:\n- Total Cholesterol: 180 mg/dL (Normal)\n- HDL: 55 mg/dL (Good)\n- LDL: 100 mg/dL (Optimal)\n- Triglycerides: 125 mg/dL (Normal)\n\nConclusion:\n- Lipid profile is excellent\n- Continue current diet and exercise regimen\n- Repeat test in 12 months',
-    noteType: 'LAB_REVIEW',
-    patientId: 'pat-003',
-    patientName: 'Farai Zvobgo',
-    createdAt: '2026-01-28T09:15:00Z',
-    createdBy: 'Nurse Rudo Mutasa',
-    colorCode: '#F59E0B',
-  },
-];
 
 const noteTypeColors: Record<string, string> = {
   CONSULTATION: 'bg-teal-100 text-teal-800',
@@ -72,7 +23,7 @@ export default function NoteDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user, isLoading: authLoading } = useAuth();
-  const [note, setNote] = useState<Note | null>(null);
+  const [note, setNote] = useState<(Note & { createdByName?: string }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -82,12 +33,24 @@ export default function NoteDetailPage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Find note from mock data
     const noteId = params.id as string;
-    const foundNote = mockNotes.find(n => n.id === noteId);
-    setNote(foundNote || null);
-    setIsLoading(false);
-  }, [params.id]);
+    if (!user || !noteId) return;
+    let cancelled = false;
+    (async () => {
+      setIsLoading(true);
+      try {
+        const data = await notesApi.getById(noteId);
+        if (!cancelled) setNote(data as Note & { createdByName?: string });
+      } catch {
+        if (!cancelled) setNote(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id, user]);
 
   if (authLoading || isLoading) {
     return (
@@ -112,7 +75,7 @@ export default function NoteDetailPage() {
           <CardContent className="p-8 text-center">
             <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Note Not Found</h2>
-            <p className="text-gray-500">The note you're looking for doesn't exist or has been deleted.</p>
+            <p className="text-gray-500">The note you&apos;re looking for doesn&apos;t exist or has been deleted.</p>
             <Button className="mt-4" onClick={() => router.push('/notes')}>
               Return to Notes
             </Button>
@@ -130,10 +93,6 @@ export default function NoteDetailPage() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    alert('PDF download feature is coming soon!');
-  };
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -148,16 +107,6 @@ export default function NoteDetailPage() {
             <p className="text-gray-500">Clinical note details</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDownloadPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </Button>
-          <Button variant="outline">
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit Note
-          </Button>
-        </div>
       </div>
 
       {/* Note Details */}
@@ -171,7 +120,7 @@ export default function NoteDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose max-w-none">
+            <div className="prose max-w-none whitespace-pre-wrap">
               {note.content.split('\n').map((paragraph, index) => (
                 <p key={index} className={paragraph.trim() === '' ? 'h-4' : ''}>
                   {paragraph}
@@ -198,18 +147,20 @@ export default function NoteDetailPage() {
                   </Badge>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <User className="h-4 w-4 text-gray-400 mt-1" />
-                <div>
-                  <p className="text-sm text-gray-500">Patient</p>
-                  <p className="font-medium">{note.patientName}</p>
+              {note.patientName && (
+                <div className="flex items-start gap-3">
+                  <User className="h-4 w-4 text-gray-400 mt-1" />
+                  <div>
+                    <p className="text-sm text-gray-500">Patient</p>
+                    <p className="font-medium">{note.patientName}</p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex items-start gap-3">
                 <User className="h-4 w-4 text-gray-400 mt-1" />
                 <div>
                   <p className="text-sm text-gray-500">Created By</p>
-                  <p className="font-medium">{note.createdBy}</p>
+                  <p className="font-medium">{note.createdByName || note.createdBy}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -223,21 +174,19 @@ export default function NoteDetailPage() {
           </Card>
 
           {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" onClick={() => router.push(`/patients/${note.patientId}`)}>
-                <User className="h-4 w-4 mr-2" />
-                View Patient Record
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => router.push('/notes/new')}>
-                <FileText className="h-4 w-4 mr-2" />
-                Create Follow-up Note
-              </Button>
-            </CardContent>
-          </Card>
+          {note.patientId && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" onClick={() => router.push(`/patients/${note.patientId}`)}>
+                  <User className="h-4 w-4 mr-2" />
+                  View Patient Record
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
